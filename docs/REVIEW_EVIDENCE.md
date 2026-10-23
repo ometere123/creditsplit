@@ -15,7 +15,7 @@ This ledger separates reproducible local/CI evidence from external evidence that
 
 ## External evidence still required
 
-- [ ] Final post-evidence documentation commit SHA recorded after this ledger update.
+- [x] Evidence ledger commit: [`7cec66ae6d1ab755e65aacebd0ca76c69d3f9cae`](https://github.com/ometere123/creditsplit/commit/7cec66ae6d1ab755e65aacebd0ca76c69d3f9cae); the final repository commit is reported in the completion handoff.
 - [ ] StudioNet 61999 deployment address, deployment transaction hash, source hash and explorer links.
 - [ ] Real funded sponsor create/fund transaction and readback.
 - [ ] Three independent contributor wallet joins and attributable submissions.
