@@ -14,7 +14,7 @@ Commands below are the source-matched checks used for this tree. They are eviden
 | Production build | `npm run build` in `frontend/` | Passed locally |
 | Runtime dependency audit | `npm audit --omit=dev --audit-level=high` at repository root and `npm audit --audit-level=high` in `frontend/` | 0 vulnerabilities in runtime/frontend dependency sets |
 | Browser smoke | `npm run test:e2e` in `frontend/` | 2 passed in CI run [40034433525](https://github.com/ometere123/creditsplit/actions/runs/40034433525): Chromium desktop and Pixel 7 |
-| StudioNet lifecycle | Signed writes against chain 61999 | Not run: no funded wallet/deployment credentials were available in this environment |
+| StudioNet lifecycle | Signed writes against chain 61999 | Deployment attempted with the final source; finalized `Undetermined` / `NO_MAJORITY` with leader `UNKNOWN`, no address created. The RPC also reports consensus/staking contracts unavailable. |
 | Vercel production | Actual public deployment URL | Not run: no Creditsplit project exists in the connected Vercel team, and deployment requires the verified contract address |
 
 Direct Mode captures the validator callback and exercises contract state transitions, but it cannot prove that production consensus validators agree or that an external GEN message changed a real EOA balance. Those claims require the signed StudioNet evidence ledger described in `docs/REVIEW_EVIDENCE.md`.

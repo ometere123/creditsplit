@@ -17,6 +17,7 @@ This ledger separates reproducible local/CI evidence from external evidence that
 
 - [x] Evidence ledger commit: [`7cec66ae6d1ab755e65aacebd0ca76c69d3f9cae`](https://github.com/ometere123/creditsplit/commit/7cec66ae6d1ab755e65aacebd0ca76c69d3f9cae); the final repository commit is reported in the completion handoff.
 - [ ] StudioNet 61999 deployment address, deployment transaction hash, source hash and explorer links.
+- [x] Deployment attempt recorded: `0x5871890bcccbcb55d1b3980f28e5e04953cfdafc21ddee5a7147d7b9e77fbe86` finalized as `Undetermined` / `NO_MAJORITY` with `txExecutionResultName=UNKNOWN`; `value_credited=false`, no address created. [StudioNet explorer](https://genlayer-explorer.vercel.app/) is available, but no verified transaction deep-link was inferred. This is a failed external attempt, not a deployment or payment receipt.
 - [ ] Real funded sponsor create/fund transaction and readback.
 - [ ] Three independent contributor wallet joins and attributable submissions.
 - [ ] Assembler artifact, review responses, frozen digest and state readback.
@@ -32,6 +33,7 @@ This ledger separates reproducible local/CI evidence from external evidence that
 
 | Scenario | Contract tx | Execution result | Triggered child tx / outcome | State readback | Balance proof |
 | --- | --- | --- | --- | --- | --- |
+| Contract deployment attempt | `0x5871890bcccbcb55d1b3980f28e5e04953cfdafc21ddee5a7147d7b9e77fbe86` | `FINALIZED · Undetermined` / `NO_MAJORITY`; leader `UNKNOWN` | none; no address created | unavailable | `value_credited=false` |
 | Sponsor create + fund | pending | pending | pending | pending | pending |
 | Contributor A/B/C join | pending | pending | n/a | pending | n/a |
 | Contributions + final artifact | pending | pending | n/a | pending | n/a |

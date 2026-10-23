@@ -2,6 +2,8 @@
 
 This runbook is intentionally executable only with an authorized, funded StudioNet wallet and the repository's GitHub/Vercel credentials. Do not put a private key or server wallet in this repository or frontend.
 
+Current verification record (2026-10-23): the final source was submitted to StudioNet from the active funded keystore, but deployment transaction `0x5871890bcccbcb55d1b3980f28e5e04953cfdafc21ddee5a7147d7b9e77fbe86` finalized as `Undetermined` with `result_name=NO_MAJORITY`, `txExecutionResultName=UNKNOWN`, `consensus_data=null`, and `value_credited=false`. No contract address was created. The same RPC reports that consensus/staking contracts are unavailable, so this is an external StudioNet consensus condition—not evidence of a successful deployment.
+
 ## Contract
 
 1. Check out the exact intended `main` commit and confirm `git status --short` is empty.
