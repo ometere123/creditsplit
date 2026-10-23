@@ -10,9 +10,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install 'pytest==8.4.2'
+      - run: python -m pip install 'pytest==8.4.2' 'genlayer-test==0.29.2' 'genvm-linter==0.11.0'
       - run: python -m compileall -q contracts
-      - run: python -m pytest -q tests/test_contract_offline.py
+      - run: python -m pytest -q tests/test_contract_offline.py tests/direct/
+      - run: genvm-lint check contracts/Creditsplit.py
   frontend:
     runs-on: ubuntu-latest
     defaults:
