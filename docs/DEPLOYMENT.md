@@ -6,7 +6,7 @@ This runbook is intentionally executable only with an authorized, funded StudioN
 
 1. Check out the exact intended `main` commit and confirm `git status --short` is empty.
 2. Confirm Node 22, Python 3.12, local `genlayer --version` `0.39.1`, `genlayer-js` `1.1.8`, `genlayer-test` `0.29.2`, and `genvm-linter` `0.11.0`.
-3. Run the offline suite, Direct Mode suite, and semantic linter with `GENVM_VERSION=v0.3.0-rc7`. Record the full JSON linter output.
+3. Run the offline suite, Direct Mode suite, and semantic linter with `GENVM_VERSION=v0.2.16`. Record the full JSON linter output. Direct Mode is pinned to this compatible universal bundle for `genlayer-test==0.29.2`.
 4. Select StudioNet only: chain ID `61999`, RPC `https://studio.genlayer.com/api`. Confirm the CLI network configuration before signing.
 5. Deploy `contracts/Creditsplit.py` from the exact commit. Record the deployment transaction hash, contract address, source SHA-256, and final execution result.
 6. Read the deployed contract's initial accounting and project count. Do not reuse an address after a material source change.

@@ -6,7 +6,7 @@ Creditsplit is a single-scope Social / Creator Rewards / Contributor Reputation 
 
 ## Status and honesty
 
-**Source implementation / deployment pending; NOT deployed or verified end-to-end.** No contract address, finalized receipts, payment confirmations or 5/5/5/5 review score have been established. The frontend refuses writes without `NEXT_PUBLIC_CONTRACT_ADDRESS`. The current local verification evidence is 20 offline tests, 10 Direct Mode tests, 8 Vitest tests, strict TypeScript, and a production build; browser E2E, StudioNet transactions, source-matched deployment, Vercel release and outbound transfer reconciliation remain mandatory gates.
+**Source implementation verified locally and in GitHub Actions; NOT deployed or verified end-to-end.** No contract address, finalized receipts, payment confirmations or 5/5/5/5 review score have been established. The frontend refuses writes without `NEXT_PUBLIC_CONTRACT_ADDRESS`. Current evidence is 20 offline tests, 10 Direct Mode tests, 8 Vitest tests, strict TypeScript, a production build, and 2 Playwright smoke tests across desktop and mobile; StudioNet transactions, source-matched deployment, Vercel release and outbound transfer reconciliation remain mandatory gates.
 
 ## Locked environment
 
@@ -46,7 +46,7 @@ py -3.12 -m venv .venv
 pip install -r requirements-dev.txt
 py -3.12 -m pytest -q tests/test_contract_offline.py tests/direct/
 # GenVM SDK semantic validation and Direct Mode are separate mandatory steps:
-$env:GENVM_VERSION='v0.3.0-rc7'
+$env:GENVM_VERSION='v0.2.16'
 genvm-lint check contracts/Creditsplit.py --json
 
 cd frontend
@@ -60,7 +60,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-The repository and frontend each have a committed npm lockfile. The linter bundle is selected explicitly because the default local resolver may choose an older cached GenVM manager that does not contain the contract's pinned runner; `v0.3.0-rc7` validates the pinned `py-genlayer` hash. The `I200` newer-runner notice is informational and is not suppressed.
+The repository and frontend each have a committed npm lockfile. Direct Mode pins the compatible `v0.2.16` GenVM universal bundle because `genlayer-test==0.29.2` downloads the legacy `genvm-universal.tar.xz` asset. The linter uses the same explicit version and validates the pinned `py-genlayer` hash.
 
 Set `NEXT_PUBLIC_CONTRACT_ADDRESS` only after StudioNet deployment is proven source-matched. Deployment environment variables must contain **no private keys** in the frontend or Vercel configuration.
 

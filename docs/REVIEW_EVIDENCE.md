@@ -1,20 +1,21 @@
 # Reviewer evidence ledger
 
-This ledger separates reproducible local evidence from external evidence that still requires an authorized funded wallet, GitHub Actions run, source-matched StudioNet deployment and Vercel project. Never claim a deployment or transfer that is not backed by a hash, receipt and balance proof.
+This ledger separates reproducible local/CI evidence from external evidence that still requires an authorized funded wallet, source-matched StudioNet deployment and Vercel project. Never claim a deployment or transfer that is not backed by a hash, receipt and balance proof.
 
 ## Verified locally in this working tree
 
 - [x] Contract offline harness: `py -3.12 -m pytest -q tests/test_contract_offline.py` — 20 passed.
 - [x] Actual pinned Direct Mode: `py -3.12 -m pytest -q tests/direct/` — 10 passed. Coverage includes escrow creation, identity enforcement, deadlines, fallback, refunds, mocked malformed/adversarial decisions and replay prevention.
-- [x] AST + semantic GenVM lint: `GENVM_VERSION=v0.3.0-rc7 genvm-lint check contracts/Creditsplit.py --json` — passed, 15 methods (5 views, 10 writes). The linter reports an informational newer-runner notice; the contract remains pinned to and tested with the repository's `py-genlayer` hash.
+- [x] AST + semantic GenVM lint: `GENVM_VERSION=v0.2.16 genvm-lint check contracts/Creditsplit.py --json` — passed, 15 methods (5 views, 10 writes). The contract remains pinned to and tested with the repository's `py-genlayer` hash.
 - [x] Repository-local CLI: `npm run genlayer:version` — `0.39.1`.
 - [x] Frontend lockfile install, strict typecheck, 8 Vitest tests and Next production build.
 - [x] CI workflow now uses `npm ci`, pinned action SHAs, the explicit supported linter bundle, Playwright desktop/mobile smoke projects, audit and tracked-source secret scanning.
+- [x] Code/CI commit: [`d948e788c82a822b02d394062b644ff8b0db25e9`](https://github.com/ometere123/creditsplit/commit/d948e788c82a822b02d394062b644ff8b0db25e9); contract source SHA-256: `CD4AA250388CE3478B674E8D3049439B231489E37745BE0396295199F2B220EA`.
+- [x] GitHub Actions run [40034433525](https://github.com/ometere123/creditsplit/actions/runs/40034433525) — contract and frontend jobs successful, including Direct Mode, semantic lint, audits, desktop/mobile Playwright, typecheck and production build.
 
 ## External evidence still required
 
-- [ ] Final commit SHA and source SHA-256 published from a clean `main` checkout.
-- [ ] GitHub Actions run URL with all required jobs successful.
+- [ ] Final post-evidence documentation commit SHA recorded after this ledger update.
 - [ ] StudioNet 61999 deployment address, deployment transaction hash, source hash and explorer links.
 - [ ] Real funded sponsor create/fund transaction and readback.
 - [ ] Three independent contributor wallet joins and attributable submissions.
@@ -22,8 +23,9 @@ This ledger separates reproducible local evidence from external evidence that st
 - [ ] Evaluation transaction with successful `txExecutionResultName`, validator agreement evidence and deterministic amount ledger.
 - [ ] Every finalization-triggered external message's execution outcome and beneficiary balance delta.
 - [ ] Recruitment refund and incomplete-deliverable refund transaction receipts and balance deltas.
-- [ ] Playwright run artifact and a live desktop/mobile wallet verification against the deployed URL.
-- [ ] Vercel public URL with the verified current contract address.
+- [x] CI Playwright desktop/mobile smoke tests — successful in run [40034433525](https://github.com/ometere123/creditsplit/actions/runs/40034433525).
+- [ ] Live desktop/mobile wallet verification against the deployed URL.
+- [ ] Vercel public URL with the verified current contract address. No Creditsplit project currently exists in the connected Vercel team.
 - [ ] Any demo video or public submission link, if required by the portal.
 
 ## Transaction ledger template
