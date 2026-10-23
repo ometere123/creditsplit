@@ -11,6 +11,17 @@ from __future__ import annotations
 
 import os
 
+from gltest.direct import sdk_loader
+
+# genlayer-test 0.29.2 resolves the Direct Mode SDK from the newest GenVM
+# release when no version is supplied.  Its downloader expects the legacy
+# ``genvm-universal.tar.xz`` asset, while newer releases publish a different
+# asset name.  Pin the compatible universal bundle explicitly so local and
+# CI runs execute the same actual Direct Mode runtime.
+sdk_loader.get_latest_version = lambda: os.environ.get(
+    "CREDITSPLIT_DIRECT_GENVM_VERSION", "v0.2.16"
+)
+
 if os.name == "nt":
     from gltest.direct import loader
     from gltest.direct.vm import VMContext
