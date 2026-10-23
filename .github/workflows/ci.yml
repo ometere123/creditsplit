@@ -1,0 +1,30 @@
+name: Creditsplit source checks
+on:
+  push:
+  pull_request:
+jobs:
+  contract-offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'pytest==8.4.2'
+      - run: python -m compileall -q contracts
+      - run: python -m pytest -q tests/test_contract_offline.py
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # Codex must generate a verified lockfile and replace install with npm ci.
+      - run: npm install --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
