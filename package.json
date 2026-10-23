@@ -1,0 +1,13 @@
+{
+  "name": "creditsplit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Creditsplit GenLayer StudioNet 61999 project",
+  "scripts": {
+    "genlayer:version": "genlayer --version",
+    "contract:lint": "genvm-lint check contracts/Creditsplit.py"
+  },
+  "devDependencies": {
+    "genlayer": "0.39.1"
+  }
+}
