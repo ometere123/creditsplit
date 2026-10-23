@@ -1,21 +1,41 @@
-# Reviewer evidence checklist (not yet completed)
+# Reviewer evidence ledger
 
-All boxes below are **unverified** until concrete evidence links and command logs are added. Never claim a passing test, deployment or transfer that did not happen.
+This ledger separates reproducible local evidence from external evidence that still requires an authorized funded wallet, GitHub Actions run, source-matched StudioNet deployment and Vercel project. Never claim a deployment or transfer that is not backed by a hash, receipt and balance proof.
 
-- [ ] Source commit SHA, final tree and clean npm/Python dependency lockfiles.
-- [ ] Version checks: StudioNet=61999, local CLI=0.39.1, GenLayerJS=1.1.8, Python SDK target pinned.
-- [ ] Contract AST, GenVM semantic lint, no prohibited imports or storage types.
-- [ ] Offline harness green (`pytest -q tests/test_contract_offline.py`) — source authoring session recorded 17 passed; re-run at final HEAD.
-- [ ] `genlayer-test` Direct Mode with independent leader/validator mock and malicious-input regression.
-- [ ] Source-matched StudioNet deployed contract and its explorer URL.
-- [ ] Real signed sponsor funding transaction with nonzero native GEN and successful state readback.
-- [ ] Three different contributor wallet joins and authorized versioned submissions.
-- [ ] Assembler final artifact, contributor attribution response and frozen SHA-256 readback.
-- [ ] Finalized evaluation transaction with `isSuccessful` + accepted band ledger and distinct independent validator checks.
-- [ ] Finalization-triggered external GEN messages individually reconciled with recipient EVM balances.
-- [ ] Recruitment-expiry refund and incomplete-deliverable refund finalization + balance reconciliation.
-- [ ] Browser Playwright E2E for actual injected EIP-1193 wallet with exact chain 61999, correct address and rendered frontend.
-- [ ] CI install, Next build, strict typecheck, Vitest, security review and Vercel release URL.
-- [ ] Demo video + full transaction provenance + public post, if submitted as separately verifiable extras.
+## Verified locally in this working tree
+
+- [x] Contract offline harness: `py -3.12 -m pytest -q tests/test_contract_offline.py` — 20 passed.
+- [x] Actual pinned Direct Mode: `py -3.12 -m pytest -q tests/direct/` — 10 passed. Coverage includes escrow creation, identity enforcement, deadlines, fallback, refunds, mocked malformed/adversarial decisions and replay prevention.
+- [x] AST + semantic GenVM lint: `GENVM_VERSION=v0.3.0-rc7 genvm-lint check contracts/Creditsplit.py --json` — passed, 15 methods (5 views, 10 writes). The linter reports an informational newer-runner notice; the contract remains pinned to and tested with the repository's `py-genlayer` hash.
+- [x] Repository-local CLI: `npm run genlayer:version` — `0.39.1`.
+- [x] Frontend lockfile install, strict typecheck, 8 Vitest tests and Next production build.
+- [x] CI workflow now uses `npm ci`, pinned action SHAs, the explicit supported linter bundle, Playwright desktop/mobile smoke projects, audit and tracked-source secret scanning.
+
+## External evidence still required
+
+- [ ] Final commit SHA and source SHA-256 published from a clean `main` checkout.
+- [ ] GitHub Actions run URL with all required jobs successful.
+- [ ] StudioNet 61999 deployment address, deployment transaction hash, source hash and explorer links.
+- [ ] Real funded sponsor create/fund transaction and readback.
+- [ ] Three independent contributor wallet joins and attributable submissions.
+- [ ] Assembler artifact, review responses, frozen digest and state readback.
+- [ ] Evaluation transaction with successful `txExecutionResultName`, validator agreement evidence and deterministic amount ledger.
+- [ ] Every finalization-triggered external message's execution outcome and beneficiary balance delta.
+- [ ] Recruitment refund and incomplete-deliverable refund transaction receipts and balance deltas.
+- [ ] Playwright run artifact and a live desktop/mobile wallet verification against the deployed URL.
+- [ ] Vercel public URL with the verified current contract address.
+- [ ] Any demo video or public submission link, if required by the portal.
+
+## Transaction ledger template
+
+| Scenario | Contract tx | Execution result | Triggered child tx / outcome | State readback | Balance proof |
+| --- | --- | --- | --- | --- | --- |
+| Sponsor create + fund | pending | pending | pending | pending | pending |
+| Contributor A/B/C join | pending | pending | n/a | pending | n/a |
+| Contributions + final artifact | pending | pending | n/a | pending | n/a |
+| Attribution freeze | pending | pending | n/a | digest pending | n/a |
+| Successful evaluation | pending | pending | pending | allocations pending | pending |
+| Recruitment refund | pending | pending | pending | refund pending | pending |
+| Incomplete-deliverable refund | pending | pending | pending | refund pending | pending |
 
 **Review objective** is 5/5/5/5; a score cannot be self-certified by the engineering team.

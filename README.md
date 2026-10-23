@@ -6,7 +6,7 @@ Creditsplit is a single-scope Social / Creator Rewards / Contributor Reputation 
 
 ## Status and honesty
 
-**Source implementation / Codex handoff; NOT deployed or verified end-to-end.** No contract address, finalized receipts, payment confirmations or 5/5/5/5 review score have been established. The frontend refuses writes without `NEXT_PUBLIC_CONTRACT_ADDRESS`. Offline Python harness tests exercise contract logic with an intentionally mocked GenLayer runtime. A real GenVM lint + Direct Mode run, source-matched deployment, real EIP-1193 writes, explorer verification and outbound transfer reconciliation remain mandatory gates.
+**Source implementation / deployment pending; NOT deployed or verified end-to-end.** No contract address, finalized receipts, payment confirmations or 5/5/5/5 review score have been established. The frontend refuses writes without `NEXT_PUBLIC_CONTRACT_ADDRESS`. The current local verification evidence is 20 offline tests, 10 Direct Mode tests, 8 Vitest tests, strict TypeScript, and a production build; browser E2E, StudioNet transactions, source-matched deployment, Vercel release and outbound transfer reconciliation remain mandatory gates.
 
 ## Locked environment
 
@@ -33,30 +33,34 @@ All evidence is **public** and qualifying work is submitted under **CC BY 4.0** 
 - `contracts/Creditsplit.py` — one authoritative Intelligent Contract with custom EP.
 - `frontend/` — full responsive application; live reads and wallet writes (no fixtures masquerading as on-chain data).
 - `tests/test_contract_offline.py` — offline adversarial logic harness (not Direct Mode).
-- `frontend/tests/` — deterministic form/wei input tests.
+- `tests/direct/` — actual pinned GenLayer Testing Suite Direct Mode coverage.
+- `frontend/tests/` — deterministic form/wei input tests; `frontend/tests/e2e/` — Playwright responsive smoke coverage.
 - `docs/` — architecture, economics, security and reviewer evidence gates.
 - `.github/workflows/ci.yml` — test/build verification scaffold.
 
 ## Local use
 
 ```sh
-python3.12 -m venv .venv
-. .venv/bin/activate
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements-dev.txt
-pytest -q tests/test_contract_offline.py
+py -3.12 -m pytest -q tests/test_contract_offline.py tests/direct/
 # GenVM SDK semantic validation and Direct Mode are separate mandatory steps:
-genvm-lint check contracts/Creditsplit.py
+$env:GENVM_VERSION='v0.3.0-rc7'
+genvm-lint check contracts/Creditsplit.py --json
 
 cd frontend
-npm install
+npm ci
 npm run typecheck
 npm test
 npm run build
+npx playwright install chromium
+npm run test:e2e
 cp .env.example .env.local
 npm run dev
 ```
 
-The npm package lockfile **must be generated, committed, and switched to `npm ci` by Codex** after an online install. Dependency installation and TypeScript/build checks could not be completed in the isolated source-authoring container; do not assume success from the presence of CI configuration.
+The repository and frontend each have a committed npm lockfile. The linter bundle is selected explicitly because the default local resolver may choose an older cached GenVM manager that does not contain the contract's pinned runner; `v0.3.0-rc7` validates the pinned `py-genlayer` hash. The `I200` newer-runner notice is informational and is not suppressed.
 
 Set `NEXT_PUBLIC_CONTRACT_ADDRESS` only after StudioNet deployment is proven source-matched. Deployment environment variables must contain **no private keys** in the frontend or Vercel configuration.
 
@@ -70,3 +74,14 @@ Set `NEXT_PUBLIC_CONTRACT_ADDRESS` only after StudioNet deployment is proven sou
 6. Confirm contract ABI/public method names, fee estimation and StudioNet browser wallet paths from actual signed transactions; repair genuine incompatibilities, rerun tests and redeploy source-matched if changes occur.
 
 See `docs/REVIEW_EVIDENCE.md` for the exact reviewer-facing evidence ledger. The final Codex handoff prompt is intentionally provided **in chat only**, not in this repository.
+
+## Reviewer-facing references
+
+- [Architecture and trust boundaries](docs/ARCHITECTURE.md)
+- [Consensus and Equivalence Principle](docs/CONSENSUS.md)
+- [Contract method reference](docs/CONTRACT_REFERENCE.md)
+- [GEN accounting and refunds](docs/ECONOMICS.md)
+- [Threat model and limitations](docs/THREAT_MODEL.md)
+- [Test matrix and commands](docs/TEST_MATRIX.md)
+- [Deployment and provenance procedure](docs/DEPLOYMENT.md)
+- [Evidence ledger](docs/REVIEW_EVIDENCE.md)

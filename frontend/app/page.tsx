@@ -1,7 +1,7 @@
 'use client';
 import {useCallback,useEffect,useMemo,useState, type FormEvent} from 'react';
 import {ArrowRight,ArrowUpRight,BookOpen,Check,ChevronDown,Clock3,Copy,ExternalLink,FileClock,FileText,Fingerprint,GitBranch,Globe2,Info,Layers3,Link2,LockKeyhole,Menu,Plus,Scale,Search,ShieldCheck,Sparkles,Users,Wallet,X} from 'lucide-react';
-import {configured,connectWallet,CONTRACT_ADDRESS,EXPLORER,readContract,writeAndConfirm} from '../lib/chain';
+import {configured,connectWallet,CONTRACT_ADDRESS,EXPLORER,readContract,waitForSuccessfulFinalization,writeAndConfirm} from '../lib/chain';
 import {bytes,currentDeadline,EMPTY_PROFILE,formatDate,formatGen,getSlot,parseGen,shortAddress,validateProjectInput,type Profile,type Project,type ProjectPreview,type Packet} from '../lib/types';
 
 type Page='discover'|'create'|'project'|'profile'|'how';
@@ -26,12 +26,17 @@ export default function Home(){
   const [error,setError]=useState('');
   const [pending,setPending]=useState(false);
   const [txHash,setTxHash]=useState('');
+  const [unresolvedHash,setUnresolvedHash]=useState('');
   const [title,setTitle]=useState(''); const [brief,setBrief]=useState('');
   const [invites,setInvites]=useState(['','','']);const [assembler,setAssembler]=useState(0);
   const [reward,setReward]=useState('');const [acceptedTerms,setAcceptedTerms]=useState(false);
   const [contribution,setContribution]=useState('');const [finalText,setFinalText]=useState('');
   const [sourceRefs,setSourceRefs]=useState<string[]>([]); const [response,setResponse]=useState('');
   const [loadMore,setLoadMore]=useState(20);
+  useEffect(()=>{
+    const saved=window.localStorage.getItem('creditsplit:submitted-tx');
+    if(saved){setUnresolvedHash(saved);setTxHash(saved);setStatus('A submitted transaction needs reconciliation before another write.');}
+  },[]);
   const loadProject=useCallback(async(id:number)=>{if(!configured)return;const raw=await readContract<string>('get_project',[id]); if(!raw)throw new Error('Project not found.');setProject(JSON.parse(raw) as Project);},[]);
   const refresh=useCallback(async()=>{
     if(!configured)return;
@@ -55,17 +60,35 @@ export default function Home(){
   const availablePackets=project?.packets.flat()??[];
   const displayProjects=projects.filter(p=>(p.title+' '+p.brief+' '+p.status).toLowerCase().includes(filter.toLowerCase()));
   const currentStage=project?.status??'';
-  const canOperate=configured&&!!wallet&&!pending;
+  const canOperate=configured&&!!wallet&&!pending&&!unresolvedHash;
   async function attachWallet(){setError('');try{const w=await connectWallet();setWallet(w);setStatus('Wallet connected to StudioNet 61999.');}catch(e){setError(String(e));}}
   async function execute(method:string,args:unknown[]=[],value=0n){
     if(!wallet)throw new Error('Connect MetaMask first.');
-    setPending(true);setError('');setTxHash('');setStatus('Estimating fees and requesting wallet signature…');
+    if(unresolvedHash)throw new Error(`Transaction ${shortAddress(unresolvedHash)} is already submitted. Reconcile it before signing again.`);
+    setPending(true);setError('');setTxHash('');setStatus('Preparing the wallet transaction and requesting your signature…');
+    let submitted='';let confirmed=false;
     try {
-      await writeAndConfirm(method,args,value,wallet,(hash)=>{setTxHash(hash);setStatus('Submitted. Waiting for verified finalization; do not re-submit.');});
+      await writeAndConfirm(method,args,value,wallet,(hash)=>{submitted=hash;setTxHash(hash);window.localStorage.setItem('creditsplit:submitted-tx',hash);setStatus('Submitted. Waiting for verified finalization; do not re-submit.');});
+      confirmed=true;
+      window.localStorage.removeItem('creditsplit:submitted-tx');setUnresolvedHash('');
       setStatus('Transaction finalized with successful execution. Transfer delivery, where applicable, still requires independent explorer/balance verification.');
       await refresh();
       return true;
-    }catch(e){setError(e instanceof Error?e.message:String(e));setStatus('');return false;}
+    }catch(e){
+      if(submitted&&!confirmed){setUnresolvedHash(submitted);setStatus('Transaction was submitted, but finalization could not be verified. Do not sign again; reconcile the existing hash.');}
+      setError(e instanceof Error?e.message:String(e));return false;
+    }
+    finally{setPending(false);}
+  }
+  async function reconcileSubmitted(){
+    if(!unresolvedHash)return;
+    setPending(true);setError('');setStatus('Checking the existing transaction; no new transaction will be signed…');
+    try{
+      await waitForSuccessfulFinalization(unresolvedHash);
+      window.localStorage.removeItem('creditsplit:submitted-tx');setUnresolvedHash('');
+      setStatus('Existing transaction finalized with successful execution. Refreshing on-chain state.');
+      await refresh();
+    }catch(e){setError(e instanceof Error?e.message:String(e));setStatus('The submitted transaction is still unresolved. Keep the hash and retry reconciliation later; do not sign a duplicate.');}
     finally{setPending(false);}
   }
   function openProject(id:number){setError('');setStatus('');setDetailTab('overview');window.history.replaceState(null,'',`/?project=${id}`);setPage('project');void loadProject(id).catch(e=>setError(String(e)));}
@@ -80,10 +103,10 @@ export default function Home(){
     </div></header>
     <main>
       {!configured&&<div className="notice deployment-notice"><Info size={16}/><div><strong>Source build · Not deployed.</strong> Set <code>NEXT_PUBLIC_CONTRACT_ADDRESS</code> only after a verified StudioNet 61999 deployment. Actions are intentionally disabled until then.</div></div>}
-      {(error||status||txHash)&&<div className="feedback" role="status">{error&&<div className="feedback-error"><X size={16}/>{error}</div>}{status&&<div className="feedback-status"><Info size={16}/>{status}</div>}{txHash&&<a href={`${EXPLORER}/tx/${encodeURIComponent(txHash)}`} target="_blank" rel="noreferrer">View transaction {shortAddress(txHash)} <ArrowUpRight size={14}/></a>}</div>}
+      {(error||status||txHash||unresolvedHash)&&<div className="feedback" role="status">{error&&<div className="feedback-error"><X size={16}/>{error}</div>}{status&&<div className="feedback-status"><Info size={16}/>{status}</div>}{txHash&&<a href={`${EXPLORER}/tx/${encodeURIComponent(txHash)}`} target="_blank" rel="noreferrer">View transaction {shortAddress(txHash)} <ArrowUpRight size={14}/></a>}{unresolvedHash&&<div className="feedback-status"><ShieldCheck size={16}/><span>Existing submission locked: {shortAddress(unresolvedHash)}. No duplicate write is allowed.</span><Button variant="secondary" disabled={pending} onClick={()=>void reconcileSubmitted()}>Re-check existing transaction</Button></div>}</div>}
       {page==='discover'&&<>
         <section className="hero"><div className="hero-copy"><div className="eyebrow"><span className="eyebrow-dot"/> BUILT ON GENLAYER · PROOF OVER PROMISES</div><h1>Great work is<br/><em>never done alone.</em></h1><p>Commission meaningful collaborations. Give every contribution a verifiable history. Let independent consensus determine fair rewards.</p><div className="hero-actions"><Button onClick={()=>navigate('create')}>Fund a collaboration <ArrowRight size={17}/></Button><Button variant="secondary" onClick={()=>navigate('how')}>See how it works <ArrowUpRight size={17}/></Button></div><div className="hero-facts"><span><ShieldCheck size={16}/> Independent assessment</span><span><LockKeyhole size={16}/> Locked GEN escrow</span><span><Fingerprint size={16}/> Signed provenance</span></div></div>
-          <div className="hero-art" aria-hidden="true"><div className="orb orb-one"/><div className="orb orb-two"/><div className="floating-document"><div className="document-header"><div className="small-mark"><Layers3 size={17}/></div><span>COLLABORATION #042</span><Check size={16}/></div><div className="doc-line wide"/><div className="doc-line mid"/><div className="doc-line small"/><div className="doc-divider"/><div className="doc-label">CONTRIBUTION TRACE</div><div className="document-role"><div className="avatar av-blue">A</div><div className="doc-role-content"><span>Original research</span><div className="doc-line mid"/></div><span className="role-points">05</span></div><div className="document-role"><div className="avatar av-lilac">B</div><div className="doc-role-content"><span>Technical verification</span><div className="doc-line small"/></div><span className="role-points">03</span></div><div className="document-role"><div className="avatar av-gold">C</div><div className="doc-role-content"><span>Editorial support</span><div className="doc-line small"/></div><span className="role-points">01</span></div><div className="doc-result"><ShieldCheck size={19}/><span>Evidence assessed independently</span></div></div><div className="float-proof"><Sparkles size={18}/><span>Credit follows contribution.</span></div></div>
+          <div className="hero-art" aria-hidden="true"><div className="orb orb-one"/><div className="orb orb-two"/><div className="floating-document"><div className="document-header"><div className="small-mark"><Layers3 size={17}/></div><span>COLLABORATION · EVIDENCE</span><Check size={16}/></div><div className="doc-line wide"/><div className="doc-line mid"/><div className="doc-line small"/><div className="doc-divider"/><div className="doc-label">CONTRIBUTION TRACE</div><div className="document-role"><div className="avatar av-blue">A</div><div className="doc-role-content"><span>Original research</span><div className="doc-line mid"/></div><span className="role-points">05</span></div><div className="document-role"><div className="avatar av-lilac">B</div><div className="doc-role-content"><span>Technical verification</span><div className="doc-line small"/></div><span className="role-points">03</span></div><div className="document-role"><div className="avatar av-gold">C</div><div className="doc-role-content"><span>Editorial support</span><div className="doc-line small"/></div><span className="role-points">01</span></div><div className="doc-result"><ShieldCheck size={19}/><span>Evidence assessed independently</span></div></div><div className="float-proof"><Sparkles size={18}/><span>Credit follows contribution.</span></div></div>
         </section>
         <section className="stats-bar"><Count label="Trust model" value="Validator-led"/><Count label="Contribution slots" value="03"/><Count label="Platform commission" value="0%"/><Count label="Source of truth" value="On-chain"/></section>
         <section className="section projects-section"><div className="section-heading"><div><div className="eyebrow">THE WORKSPACE</div><h2>Discover collaborations</h2><p>Transparent funding, traceable work and independently decided rewards.</p></div><div className="search"><Search size={18}/><input value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Search projects" aria-label="Search projects"/></div></div>

@@ -30,7 +30,9 @@ class FakeWrite:
 
 class FakeRecipient:
     def __init__(self,address):self.address=str(address)
-    def emit_transfer(self, value):FAKE.transfers.append((self.address,int(value)))
+    def emit_transfer(self, value, on='finalized'):
+        if on != 'finalized': raise AssertionError('transfers must finalize')
+        FAKE.transfers.append((self.address,int(value)))
 
 FAKE = types.SimpleNamespace(
     Contract=object,
@@ -38,7 +40,7 @@ FAKE = types.SimpleNamespace(
     message=types.SimpleNamespace(sender_address=ADDR[0],value=0),
     public=types.SimpleNamespace(write=FakeWrite(),view=lambda method:method),
     evm=types.SimpleNamespace(contract_interface=lambda cls:cls),
-    nondet=types.SimpleNamespace(exec_prompt=lambda prompt: '{}'),
+    nondet=types.SimpleNamespace(exec_prompt=lambda prompt, **kwargs: '{}'),
     transfers=[],
 )
 
@@ -53,10 +55,14 @@ def load_contract():
     imported=importlib.util.module_from_spec(spec);spec.loader.exec_module(imported)
     imported._NativeRecipient=FakeRecipient
     chain=imported.Creditsplit()
+    # The real GenVM creates annotated persistent fields automatically. The
+    # offline harness supplies ordinary in-memory equivalents explicitly.
+    chain.projects=Map()
+    chain.profiles=Map()
     clock=[1_700_000_000]
     chain._now=lambda:clock[0]
     FAKE.vm.run_nondet_unsafe=lambda leader,validator:_consensus(leader,validator)
-    FAKE.nondet.exec_prompt=lambda prompt:json.dumps({'complete':True,'weights':[5,3,1], 'evidence_ids':[['0:1'],['1:1'],['2:1']], 'reason':'Assess registered sources'})
+    FAKE.nondet.exec_prompt=lambda prompt, **kwargs:json.dumps({'complete':True,'weights':[5,3,1], 'evidence_ids':[['0:1'],['1:1'],['2:1']], 'reason':'Assess registered sources'})
     return chain,clock
 
 def _consensus(leader,validator):
@@ -86,7 +92,16 @@ def fully_submitted(chain):
     return id
 
 @pytest.fixture
-def fixture():return load_contract()
+def fixture():
+    previous= sys.modules.get('genlayer')
+    value=load_contract()
+    try:
+        yield value
+    finally:
+        if previous is None:
+            sys.modules.pop('genlayer',None)
+        else:
+            sys.modules['genlayer']=previous
 
 def test_create_escrow_and_reject_sponsor_invite(fixture):
     c,_=fixture;id=create(c)
@@ -150,13 +165,39 @@ def test_forged_leader_weight_rejected(fixture):
     c,_=fixture;id=fully_submitted(c)
     outputs=[{'complete':True,'weights':[5,3,1],'evidence_ids':[['0:1'],['1:1'],['2:1']],'reason':'leader'},
              {'complete':True,'weights':[0,3,5],'evidence_ids':[[],['1:1'],['2:1']],'reason':'validator'}]
-    FAKE.nondet.exec_prompt=lambda prompt:json.dumps(outputs.pop(0))
+    FAKE.nondet.exec_prompt=lambda prompt, **kwargs:json.dumps(outputs.pop(0))
     with pytest.raises(UserError):c.evaluate_contributions(id)
+    assert not FAKE.transfers and json.loads(c.get_project(id))['status']=='FROZEN'
+
+def test_validator_must_agree_on_evidence_attribution(fixture):
+    c,_=fixture;id=fully_submitted(c)
+    outputs=[
+        {'complete':True,'weights':[5,3,1],'evidence_ids':[['0:1'],['1:1'],['2:1']],'reason':'leader'},
+        {'complete':True,'weights':[5,3,1],'evidence_ids':[['0:1'],['1:1'],[]],'reason':'validator'},
+    ]
+    FAKE.nondet.exec_prompt=lambda prompt, **kwargs:json.dumps(outputs.pop(0))
+    with pytest.raises(UserError):c.evaluate_contributions(id)
+    assert not FAKE.transfers and json.loads(c.get_project(id))['status']=='FROZEN'
+
+def test_decision_with_uncontrolled_payment_fields_rejected(fixture):
+    c,_=fixture;id=fully_submitted(c)
+    FAKE.nondet.exec_prompt=lambda prompt, **kwargs:json.dumps({
+        'complete':True,'weights':[5,3,1],'evidence_ids':[['0:1'],['1:1'],['2:1']],
+        'reason':'leader','amounts_wei':['90','0','0'],
+    })
+    with pytest.raises(UserError):c.evaluate_contributions(id)
+    assert not FAKE.transfers
+
+def test_malformed_llm_output_fails_closed(fixture):
+    c,_=fixture;id=fully_submitted(c)
+    FAKE.nondet.exec_prompt=lambda prompt, **kwargs:'not-json'
+    with pytest.raises(UserError, match=r'\[LLM_ERROR\]'):
+        c.evaluate_contributions(id)
     assert not FAKE.transfers and json.loads(c.get_project(id))['status']=='FROZEN'
 
 def test_incomplete_report_refunds_sponsor(fixture):
     c,_=fixture;id=fully_submitted(c)
-    FAKE.nondet.exec_prompt=lambda prompt:json.dumps({'complete':False,'weights':[0,0,0], 'evidence_ids':[[],[],[]], 'reason':'Not completed'})
+    FAKE.nondet.exec_prompt=lambda prompt, **kwargs:json.dumps({'complete':False,'weights':[0,0,0], 'evidence_ids':[[],[],[]], 'reason':'Not completed'})
     c.evaluate_contributions(id)
     assert FAKE.transfers==[(ADDR[0],90)] and json.loads(c.get_project(id))['status']=='REFUND_EMITTED'
 
@@ -177,7 +218,7 @@ def test_timeout_fallback_and_freeze(fixture):
 
 def test_invalid_result_is_never_paid(fixture):
     c,_=fixture;id=fully_submitted(c)
-    FAKE.nondet.exec_prompt=lambda prompt:json.dumps({'complete':True,'weights':[100,0,0],'evidence_ids':[['0:1'],[],[]],'reason':'fake'})
+    FAKE.nondet.exec_prompt=lambda prompt, **kwargs:json.dumps({'complete':True,'weights':[100,0,0],'evidence_ids':[['0:1'],[],[]],'reason':'fake'})
     with pytest.raises(UserError):c.evaluate_contributions(id)
     assert not FAKE.transfers
 
