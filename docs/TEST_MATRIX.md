@@ -13,7 +13,7 @@ Commands below are the source-matched checks used for this tree. They are eviden
 | Frontend unit tests | `npm test` in `frontend/` | 11 passed locally |
 | Production build | `npm run build` in `frontend/` | Passed locally |
 | Runtime dependency audit | `npm audit --omit=dev --audit-level=high` at repository root and `npm audit --audit-level=high` in `frontend/` | 0 vulnerabilities in runtime/frontend dependency sets |
-| Browser smoke | `npm run test:e2e` in `frontend/` | 2 passed in CI run [40034433525](https://github.com/ometere123/creditsplit/actions/runs/40034433525): Chromium desktop and Pixel 7 |
+| Browser smoke | `npm run test:e2e` in `frontend/` | 2 passed in CI run [40069563524](https://github.com/ometere123/creditsplit/actions/runs/40069563524): Chromium desktop and Pixel 7 |
 | StudioNet lifecycle | Read-only RPC + official Explorer | Three submitted hashes are protocol `Send` records with the Creditsplit source embedded in the signed rollup payload, but no validators, rounds or votes; all are `FINALIZED`/`NO_MAJORITY`/`UNKNOWN` with no contract address. The dashboard reports active validators and successful unrelated deployments, so the precise per-submission activation failure remains unresolved. |
 | Vercel production | Actual public deployment URL | Not run: no Creditsplit project exists in the connected Vercel team, and deployment requires the verified contract address |
 

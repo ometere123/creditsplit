@@ -10,12 +10,12 @@ This ledger separates reproducible local/CI evidence from external evidence that
 - [x] Repository-local CLI: `npm run genlayer:version` — `0.39.1`.
 - [x] Frontend lockfile install, strict typecheck, 11 Vitest tests and Next production build. Transaction recovery records now scope chain, wallet, contract and method; a finalized failed execution clears the duplicate-write lock after the receipt is inspected.
 - [x] CI workflow now uses `npm ci`, pinned action SHAs, the explicit supported linter bundle, Playwright desktop/mobile smoke projects, audit and tracked-source secret scanning.
-- [x] Code/CI commit: [`d948e788c82a822b02d394062b644ff8b0db25e9`](https://github.com/ometere123/creditsplit/commit/d948e788c82a822b02d394062b644ff8b0db25e9); contract source SHA-256: `CD4AA250388CE3478B674E8D3049439B231489E37745BE0396295199F2B220EA`.
-- [x] GitHub Actions run [40034433525](https://github.com/ometere123/creditsplit/actions/runs/40034433525) — contract and frontend jobs successful, including Direct Mode, semantic lint, audits, desktop/mobile Playwright, typecheck and production build.
+- [x] Final verified commit: [`f9c790825363a4b9d25c7e8a5b05d0b4c2f5f3ff`](https://github.com/ometere123/creditsplit/commit/f9c790825363a4b9d25c7e8a5b05d0b4c2f5f3ff). The committed Git blob SHA-256 of `contracts/Creditsplit.py` is `8E668391F941A26E6C91215798A4BF8533FC4609EAB2AB641634168E25AF2405`; the Windows checkout hash is `4321A21BB8240445F0BC0EC4D4D26AFA2DA0A6D03FE71226030B39176D1C5B8D` because Git normalizes the file's LF/CRLF line endings.
+- [x] GitHub Actions run [40069563524](https://github.com/ometere123/creditsplit/actions/runs/40069563524) — exact final commit `f9c7908`; contract and frontend jobs successful, including 35 Python tests, both semantic lint checks, audits, desktop/mobile Playwright, typecheck and production build.
 
 ## External evidence still required
 
-- [x] Evidence ledger commit: [`7cec66ae6d1ab755e65aacebd0ca76c69d3f9cae`](https://github.com/ometere123/creditsplit/commit/7cec66ae6d1ab755e65aacebd0ca76c69d3f9cae); the final repository commit is reported in the completion handoff.
+- [x] Evidence ledger updated in final commit [`f9c790825363a4b9d25c7e8a5b05d0b4c2f5f3ff`](https://github.com/ometere123/creditsplit/commit/f9c790825363a4b9d25c7e8a5b05d0b4c2f5f3ff).
 - [ ] StudioNet 61999 deployment address, deployment transaction hash, source hash and explorer links.
 - [x] Deployment attempt A recorded: [`0x5871890bcccbcb55d1b3980f28e5e04953cfdafc21ddee5a7147d7b9e77fbe86`](https://explorer-studio.genlayer.com/tx/0x5871890bcccbcb55d1b3980f28e5e04953cfdafc21ddee5a7147d7b9e77fbe86) — official explorer `FINALIZED · Send`, zero GEN, no initial validators or consensus result; RPC `NO_MAJORITY`, `UNKNOWN`, no rounds/votes, no address.
 - [x] Deployment attempt B recorded: [`0x144c2cba41795aa9792c1bfb74d63575a4274a9c7bd4aab51ef8bd163915d3dd`](https://explorer-studio.genlayer.com/tx/0x144c2cba41795aa9792c1bfb74d63575a4274a9c7bd4aab51ef8bd163915d3dd) — same protocol destination and no validator/consensus data; no address.
@@ -28,7 +28,7 @@ This ledger separates reproducible local/CI evidence from external evidence that
 - [ ] Evaluation transaction with successful `txExecutionResultName`, validator agreement evidence and deterministic amount ledger.
 - [ ] Every finalization-triggered external message's execution outcome and beneficiary balance delta.
 - [ ] Recruitment refund and incomplete-deliverable refund transaction receipts and balance deltas.
-- [x] CI Playwright desktop/mobile smoke tests — successful in run [40034433525](https://github.com/ometere123/creditsplit/actions/runs/40034433525).
+- [x] CI Playwright desktop/mobile smoke tests — successful in run [40069563524](https://github.com/ometere123/creditsplit/actions/runs/40069563524).
 - [ ] Live desktop/mobile wallet verification against the deployed URL.
 - [ ] Vercel public URL with the verified current contract address. No Creditsplit project currently exists in the connected Vercel team.
 - [ ] Any demo video or public submission link, if required by the portal.
