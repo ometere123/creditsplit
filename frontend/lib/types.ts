@@ -1,13 +1,26 @@
 export type Status = 'RECRUITING'|'ACTIVE'|'ASSEMBLY'|'REVIEW'|'FROZEN'|'SETTLEMENT_EMITTED'|'REFUND_EMITTED';
-export type Packet = { id: string; text: string; at: number; revision_of: string };
+export type CriterionStatus = 'met'|'partial'|'not_met';
+export type MaterialEffect = 'foundational'|'substantial'|'supporting'|'none';
+export type Packet = { id: string; text: string; at: number; revision_of: string; references: string[] };
+export type Assessment = {
+  relevance: 'direct'|'supporting'|'none';
+  distinct: boolean;
+  correctness: boolean;
+  material_effect: MaterialEffect;
+  attribution_consistent: boolean;
+  evidence_ids: string[];
+  justification: string;
+};
+export type Decision = { criteria_status: CriterionStatus[]; assessments: Assessment[]; reason: string };
 export type Project = {
-  id: number; title: string; brief: string; sponsor: string; contributors: string[];
+  id: number; title: string; brief: string; criteria: string[]; sponsor: string; contributors: string[];
   assembler_slot: number; joined: boolean[]; complete: boolean[];
   packets: Packet[][]; final_text: string; source_refs: string[];
   responses: string[]; acknowledged: boolean[]; pool_wei: string; created_at: number;
   recruit_due: number; contribute_due: number; assemble_due: number; review_due: number;
   frozen_at: number; evidence_digest: string; fallback_assembly: boolean;
-  status: Status; completion: null|boolean; weights: number[]; amounts_wei: string[];
+  status: Status; completion: null|boolean; criteria_status: CriterionStatus[]; weights: number[]; amounts_wei: string[];
+  decision: Decision|null;
   settlement: string; settlement_at: number;
 };
 export type ProjectPreview = Pick<Project,'id'|'title'|'brief'|'status'|'pool_wei'|'sponsor'|'joined'>;
@@ -40,4 +53,9 @@ export function validateProjectInput(title: string, brief: string, addresses: st
   if(bytes(brief)===0||bytes(brief)>1500)throw new Error('Brief: 1–1500 UTF-8 bytes.');
   if(addresses.length!==3||!addresses.every(isAddress)||new Set(addresses.map(s=>s.toLowerCase())).size!==3) throw new Error('Enter three distinct valid invitee wallets.');
   if(addresses.some(s=>s.toLowerCase()===sponsor.toLowerCase())) throw new Error('Sponsor cannot be a contributor.');
+}
+export function validateCriteria(criteria: string[]): void {
+  if(criteria.length!==3||criteria.some(value=>bytes(value)===0||bytes(value)>360)) {
+    throw new Error('Add exactly three non-empty acceptance criteria, each no more than 360 UTF-8 bytes.');
+  }
 }

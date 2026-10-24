@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {makeSubmittedTransaction,parseSubmittedTransaction,recoveryMatchesWallet} from '../lib/chain';
-import {parseGen,formatGen,bytes,validateProjectInput} from '../lib/types';
+import {parseGen,formatGen,bytes,validateCriteria,validateProjectInput} from '../lib/types';
 const a='0x'+'1'.repeat(40),b='0x'+'2'.repeat(40),c='0x'+'3'.repeat(40),s='0x'+'4'.repeat(40);
 describe('funding and input invariants',()=>{
   it('preserves exact wei',()=>expect(parseGen('1.000000000000000001')).toBe(1000000000000000001n));
@@ -11,6 +11,7 @@ describe('funding and input invariants',()=>{
   it('accepts three distinct invitees',()=>expect(()=>validateProjectInput('A','B',[a,b,c],s)).not.toThrow());
   it('blocks sponsor self invitation',()=>expect(()=>validateProjectInput('A','B',[a,b,s],s)).toThrow());
   it('blocks duplicate invitees',()=>expect(()=>validateProjectInput('A','B',[a,b,a],s)).toThrow());
+  it('requires three bounded acceptance criteria',()=>{expect(()=>validateCriteria(['requirements','correction','integration'])).not.toThrow();expect(()=>validateCriteria(['one','two'])).toThrow();expect(()=>validateCriteria(['x','y','z'.repeat(361)])).toThrow();});
 });
 describe('transaction recovery scope',()=>{
   it('round-trips a chain, wallet, contract and method scoped record',()=>{

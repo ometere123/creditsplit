@@ -4,10 +4,40 @@ This suite is intentionally separate from the mocked offline harness.
 It MUST run in the actual pinned genlayer-test environment before deployment.
 """
 import json
+import hashlib
 import pytest
 from datetime import datetime, timezone
 
 CONTRACT = "contracts/Creditsplit.py"
+
+
+def _assessment(slot, effect, refs=None, relevance="direct", distinct=True,
+                correctness=True, attribution_consistent=True):
+    refs = [f"{slot}:1"] if refs is None and effect != "none" else (refs or [])
+    return {
+        "relevance": relevance if effect != "none" else "none",
+        "distinct": distinct,
+        "correctness": correctness,
+        "material_effect": effect,
+        "attribution_consistent": attribution_consistent,
+        "evidence_ids": refs,
+        "justification": f"Slot {slot} was assessed from the registered passage.",
+    }
+
+
+def _decision(effects=("foundational", "substantial", "supporting"), complete=True,
+             refs=None, criteria_status=None):
+    refs = refs or [["0:1"], ["1:1"], ["2:1"]]
+    return {
+        "complete": complete,
+        "criteria_status": criteria_status or (["met", "met", "met"] if complete else ["not_met", "partial", "not_met"]),
+        "assessments": [_assessment(slot, effects[slot], refs=refs[slot]) for slot in range(3)],
+        "reason": "Frozen passages were assessed against the registered criteria.",
+    }
+
+
+def _decision_json(**kwargs):
+    return json.dumps(_decision(**kwargs), separators=(",", ":"))
 
 
 def _hex_address(address):
@@ -42,15 +72,15 @@ def _fully_frozen(contract, direct_vm, sponsor, contributors):
     for index, address in enumerate(contributors):
         direct_vm.sender = address
         contract.submit_contribution(project_id, [
-            "Foundational research",
-            "Independent correctness review",
-            "Editing and synthesis",
+            "The threat model distinguishes replayed attestations from reentrancy and explains the exploitable state transition.",
+            "Correction: the review must reject stale packet references and preserve the contributor slot from the signed wallet.",
+            "The integration section turns the two technical passages into a concise, attributed remediation guide.",
         ][index])
         contract.finish_contributing(project_id)
     direct_vm.sender = contributors[0]
     contract.submit_final_artifact(
         project_id,
-        "A complete technical report grounded in the submitted packets.",
+        "A complete remediation guide grounded in the threat model, the stale-reference correction and the integrated editorial passage.",
         '["0:1","1:1","2:1"]',
     )
     for address in contributors:
@@ -135,7 +165,7 @@ def test_direct_lifecycle_reconstructs_amounts_and_blocks_replay(
     contract = direct_deploy(CONTRACT)
     contributors = [direct_bob, direct_charlie, direct_accounts[4]]
     project_id = _fully_frozen(contract, direct_vm, direct_alice, contributors)
-    decision = '{"complete":true,"weights":[5,3,1],"evidence_ids":[["0:1"],["1:1"],["2:1"]],"reason":"Evidence supports the completed report."}'
+    decision = _decision_json()
     direct_vm.mock_llm(r"EVIDENCE_DIGEST=.*", decision)
     contract.evaluate_contributions(project_id)
     project = json.loads(contract.get_project(project_id))
@@ -143,7 +173,9 @@ def test_direct_lifecycle_reconstructs_amounts_and_blocks_replay(
     assert project["amounts_wei"] == ["50", "30", "10"]
     assert int(contract.active_escrow) == 0
     assert direct_vm._captured_validators
-    assert direct_vm.run_validator(leader_result={"complete": True, "weights": [5, 3, 1], "evidence_ids": [[], [], []], "reason": "forged"}) is False
+    forged = _decision()
+    forged["assessments"][0]["evidence_ids"] = []
+    assert direct_vm.run_validator(leader_result=forged) is False
     assert direct_vm.run_validator(leader_error=RuntimeError("validator timeout")) is False
     with direct_vm.expect_revert("frozen evidence required"):
         contract.evaluate_contributions(project_id)
@@ -172,7 +204,7 @@ def test_deadline_fallback_freezes_and_incomplete_judgment_refunds(
     contract.freeze_project(project_id)
     direct_vm.mock_llm(
         r"EVIDENCE_DIGEST=.*",
-        '{"complete":false,"weights":[0,0,0],"evidence_ids":[[],[],[]],"reason":"The deliverable is incomplete."}',
+        _decision_json(complete=False, effects=("none", "none", "none"), refs=[[], [], []]),
     )
     contract.evaluate_contributions(project_id)
     project = json.loads(contract.get_project(project_id))
@@ -230,13 +262,13 @@ def test_direct_validator_rejects_a_different_substantive_answer(
     contract = direct_deploy(CONTRACT)
     contributors = [direct_bob, direct_charlie, direct_accounts[4]]
     project_id = _fully_frozen(contract, direct_vm, direct_alice, contributors)
-    good = '{"complete":true,"weights":[5,3,1],"evidence_ids":[["0:1"],["1:1"],["2:1"]],"reason":"Evidence supports the completed report."}'
+    good = _decision_json()
     direct_vm.mock_llm(r"EVIDENCE_DIGEST=.*", good)
     contract.evaluate_contributions(project_id)
     direct_vm.clear_mocks()
     direct_vm.mock_llm(
         r"EVIDENCE_DIGEST=.*",
-        '{"complete":true,"weights":[0,3,5],"evidence_ids":[[],["1:1"],["2:1"]],"reason":"Different independent assessment."}',
+        _decision_json(effects=("none", "substantial", "foundational"), refs=[[], ["1:1"], ["2:1"]]),
     )
     assert direct_vm.run_validator(leader_result=json.loads(good)) is False
 
@@ -249,7 +281,7 @@ def test_direct_extra_payment_fields_cannot_control_settlement(
     project_id = _fully_frozen(contract, direct_vm, direct_alice, contributors)
     direct_vm.mock_llm(
         r"EVIDENCE_DIGEST=.*",
-        '{"complete":true,"weights":[5,3,1],"evidence_ids":[["0:1"],["1:1"],["2:1"]],"reason":"forged","amounts_wei":["90","0","0"]}',
+        json.dumps({**_decision(), "amounts_wei": ["90", "0", "0"]}, separators=(",", ":")),
     )
     with direct_vm.expect_revert("invalid validator-agreed judgment"):
         contract.evaluate_contributions(project_id)
@@ -266,8 +298,78 @@ def test_direct_multiple_projects_keep_escrow_isolated(
     assert int(contract.active_escrow) == 106
     direct_vm.mock_llm(
         r"EVIDENCE_DIGEST=.*",
-        '{"complete":true,"weights":[5,3,1],"evidence_ids":[["0:1"],["1:1"],["2:1"]],"reason":"Evidence supports the completed report."}',
+        _decision_json(),
     )
     contract.evaluate_contributions(first)
     assert int(contract.active_escrow) == 16
     assert json.loads(contract.get_project(second))["pool_wei"] == "16"
+
+
+def test_direct_registered_correction_reference_and_fake_reference_rejection(
+    direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
+):
+    contract = direct_deploy(CONTRACT)
+    contributors = [direct_bob, direct_charlie, direct_accounts[4]]
+    project_id = _create(contract, direct_vm, direct_alice, contributors)
+    _join_all(contract, direct_vm, contributors, project_id)
+    direct_vm.sender = direct_bob
+    contract.submit_contribution(project_id, "The original passage identifies the replay failure mode.")
+    direct_vm.sender = direct_charlie
+    contract.submit_contribution_with_references(
+        project_id,
+        "This correction explains why the replay check must bind the signed packet slot.",
+        '["0:1"]',
+    )
+    project = json.loads(contract.get_project(project_id))
+    assert project["packets"][1][0]["references"] == ["0:1"]
+    direct_vm.sender = direct_accounts[4]
+    with direct_vm.expect_revert("unregistered packet reference"):
+        contract.submit_contribution_with_references(project_id, "Fabricated evidence.", '["9:9"]')
+
+
+def test_direct_benign_validator_reference_selection_does_not_disagree(
+    direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
+):
+    contract = direct_deploy(CONTRACT)
+    contributors = [direct_bob, direct_charlie, direct_accounts[4]]
+    project_id = _fully_frozen(contract, direct_vm, direct_alice, contributors)
+    good = _decision()
+    direct_vm.mock_llm(r"EVIDENCE_DIGEST=.*", _decision_json())
+    contract.evaluate_contributions(project_id)
+    direct_vm.clear_mocks()
+    independent = _decision(refs=[["0:1", "1:1"], ["1:1", "0:1"], ["2:1"]])
+    independent["reason"] = "Different explanation, same independently justified bands."
+    direct_vm.mock_llm(r"EVIDENCE_DIGEST=.*", json.dumps(independent, separators=(",", ":")))
+    assert direct_vm.run_validator(leader_result=good) is True
+
+
+def test_direct_duplicate_substantive_passages_are_rejected(
+    direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
+):
+    contract = direct_deploy(CONTRACT)
+    contributors = [direct_bob, direct_charlie, direct_accounts[4]]
+    project_id = _fully_frozen(contract, direct_vm, direct_alice, contributors)
+    project = json.loads(contract.get_project(project_id))
+    project["packets"][1][0]["text"] = project["packets"][0][0]["text"]
+    contract.projects[project_id] = json.dumps(project, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    project["evidence_digest"] = hashlib.sha256(contract._evidence(project).encode("utf-8")).hexdigest()
+    contract.projects[project_id] = json.dumps(project, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    direct_vm.mock_llm(r"EVIDENCE_DIGEST=.*", _decision_json())
+    with direct_vm.expect_revert("invalid validator-agreed judgment"):
+        contract.evaluate_contributions(project_id)
+
+
+def test_direct_custom_acceptance_criteria_are_immutable_project_evidence(
+    direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
+):
+    contract = direct_deploy(CONTRACT)
+    direct_vm.sender = direct_alice
+    direct_vm.value = 33
+    project_id = contract.create_project_with_criteria(
+        "Correction brief",
+        "Produce a bounded security correction note.",
+        '["Identify the defect.","Give a reproducible correction.","Integrate and attribute the result."]',
+        _hex_address(direct_bob), _hex_address(direct_charlie), _hex_address(direct_accounts[4]), 0,
+    )
+    project = json.loads(contract.get_project(project_id))
+    assert project["criteria"] == ["Identify the defect.", "Give a reproducible correction.", "Integrate and attribute the result."]

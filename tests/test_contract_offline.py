@@ -1,5 +1,6 @@
 """Offline state-machine and adversarial leader harness; NOT a substitute for GenVM Direct Mode."""
 import importlib.util
+import hashlib
 import json
 import sys
 import types
@@ -7,6 +8,31 @@ import pytest
 from pathlib import Path
 
 ADDR = ['0x'+str(i)*40 for i in range(1,6)]
+
+
+def _assessment(slot, effect, refs=None, relevance="direct", distinct=True,
+                correctness=True, attribution_consistent=True, justification=None):
+    refs = [f"{slot}:1"] if refs is None and effect != "none" else (refs or [])
+    return {
+        "relevance": relevance if effect != "none" else "none",
+        "distinct": distinct,
+        "correctness": correctness,
+        "material_effect": effect,
+        "attribution_consistent": attribution_consistent,
+        "evidence_ids": refs,
+        "justification": justification or f"Registered passage for slot {slot} was assessed from its text.",
+    }
+
+
+def _decision(effects=("foundational", "substantial", "supporting"), complete=True,
+             refs=None, criteria_status=None):
+    refs = refs or [["0:1"], ["1:1"], ["2:1"]]
+    return {
+        "complete": complete,
+        "criteria_status": criteria_status or (["met", "met", "met"] if complete else ["not_met", "partial", "not_met"]),
+        "assessments": [_assessment(slot, effects[slot], refs=refs[slot]) for slot in range(3)],
+        "reason": "The frozen passages and final artifact were assessed against the registered criteria.",
+    }
 
 class Map(dict):
     @classmethod
@@ -62,7 +88,7 @@ def load_contract():
     clock=[1_700_000_000]
     chain._now=lambda:clock[0]
     FAKE.vm.run_nondet_unsafe=lambda leader,validator:_consensus(leader,validator)
-    FAKE.nondet.exec_prompt=lambda prompt, **kwargs:json.dumps({'complete':True,'weights':[5,3,1], 'evidence_ids':[['0:1'],['1:1'],['2:1']], 'reason':'Assess registered sources'})
+    FAKE.nondet.exec_prompt=lambda prompt, **kwargs:json.dumps(_decision())
     return chain,clock
 
 def _consensus(leader,validator):
@@ -85,8 +111,12 @@ def recruited(chain):
 def fully_submitted(chain):
     id=recruited(chain)
     for i,a in enumerate(ADDR[1:4]):
-        acting(a);chain.submit_contribution(id,['Core research','Correctness review','Editing support'][i]);chain.finish_contributing(id)
-    acting(ADDR[1]);chain.submit_final_artifact(id,'A complete technical report on bridges.','["0:1","1:1","2:1"]')
+        acting(a);chain.submit_contribution(id,[
+            'The threat model separates replayed attestations from reentrancy and identifies the vulnerable state transition.',
+            'Correction: packet references must bind to the signed contributor slot and reject stale evidence.',
+            'The editorial passage integrates the threat model and correction into an attributed remediation note.',
+        ][i]);chain.finish_contributing(id)
+    acting(ADDR[1]);chain.submit_final_artifact(id,'A complete remediation note grounded in the threat model, correction and integrated editorial passage.','["0:1","1:1","2:1"]')
     for a in ADDR[1:4]:acting(a);chain.respond_attribution(id,'')
     acting(ADDR[0]);chain.freeze_project(id)
     return id
@@ -133,6 +163,21 @@ def test_immutable_revisions_and_limits(fixture):
     packets=json.loads(c.get_project(id))['packets'][0]
     assert packets[0]['text']=='Original' and packets[1]['revision_of']=='0:1'
 
+
+def test_criteria_and_cross_contributor_reference_are_registered(fixture):
+    c, _ = fixture
+    id = recruited(c)
+    acting(ADDR[1]); c.submit_contribution(id, 'Bridge threat model with concrete attack paths.')
+    acting(ADDR[2]); c.submit_contribution_with_references(
+        id, 'Correction: the threat model must separate replay from reentrancy.', '["0:1"]'
+    )
+    project = json.loads(c.get_project(id))
+    assert len(project['criteria']) == 3
+    assert project['packets'][1][0]['references'] == ['0:1']
+    acting(ADDR[3])
+    with pytest.raises(UserError):
+        c.submit_contribution_with_references(id, 'Fabricated source link.', '["9:9"]')
+
 def test_unicode_bytes_rejected(fixture):
     c,_=fixture;id=recruited(c);acting(ADDR[1])
     with pytest.raises(UserError):c.submit_contribution(id,'🦄'*301)
@@ -163,28 +208,75 @@ def test_rounding_residue_highest_band(fixture):
 
 def test_forged_leader_weight_rejected(fixture):
     c,_=fixture;id=fully_submitted(c)
-    outputs=[{'complete':True,'weights':[5,3,1],'evidence_ids':[['0:1'],['1:1'],['2:1']],'reason':'leader'},
-             {'complete':True,'weights':[0,3,5],'evidence_ids':[[],['1:1'],['2:1']],'reason':'validator'}]
+    outputs=[_decision(), _decision(effects=('none', 'substantial', 'foundational'), refs=[[], ['1:1'], ['2:1']])]
     FAKE.nondet.exec_prompt=lambda prompt, **kwargs:json.dumps(outputs.pop(0))
     with pytest.raises(UserError):c.evaluate_contributions(id)
     assert not FAKE.transfers and json.loads(c.get_project(id))['status']=='FROZEN'
 
 def test_validator_must_agree_on_evidence_attribution(fixture):
     c,_=fixture;id=fully_submitted(c)
-    outputs=[
-        {'complete':True,'weights':[5,3,1],'evidence_ids':[['0:1'],['1:1'],['2:1']],'reason':'leader'},
-        {'complete':True,'weights':[5,3,1],'evidence_ids':[['0:1'],['1:1'],[]],'reason':'validator'},
-    ]
+    outputs=[_decision(), _decision(refs=[['0:1'], ['1:1'], ['0:1']])]
     FAKE.nondet.exec_prompt=lambda prompt, **kwargs:json.dumps(outputs.pop(0))
     with pytest.raises(UserError):c.evaluate_contributions(id)
     assert not FAKE.transfers and json.loads(c.get_project(id))['status']=='FROZEN'
 
+
+def test_benign_explanation_and_reference_differences_are_allowed(fixture):
+    c, _ = fixture; id = fully_submitted(c)
+    leader = _decision()
+    validator = _decision(refs=[['0:1', '1:1'], ['1:1', '0:1'], ['2:1']])
+    validator['reason'] = 'An independently worded explanation reaches the same classifications.'
+    outputs = [leader, validator]
+    FAKE.nondet.exec_prompt = lambda prompt, **kwargs: json.dumps(outputs.pop(0))
+    c.evaluate_contributions(id)
+    assert json.loads(c.get_project(id))['weights'] == [5, 3, 1]
+
+
+def test_duplicate_work_cannot_receive_two_substantial_bands(fixture):
+    c, _ = fixture; id = fully_submitted(c)
+    project = json.loads(c.get_project(id))
+    project['packets'][1][0]['text'] = project['packets'][0][0]['text']
+    c._save(id, project)
+    project['evidence_digest'] = hashlib.sha256(c._evidence(project).encode('utf-8')).hexdigest()
+    c._save(id, project)
+    with pytest.raises(UserError):
+        c.evaluate_contributions(id)
+    assert not FAKE.transfers and json.loads(c.get_project(id))['status'] == 'FROZEN'
+
+
+def test_materiality_flags_are_payment_controlling_not_leader_weights(fixture):
+    c, _ = fixture; id = fully_submitted(c)
+    decision = _decision(effects=('foundational', 'substantial', 'supporting'))
+    decision['assessments'][1]['material_effect'] = 'foundational'
+    validator = _decision(effects=('foundational', 'substantial', 'supporting'))
+    outputs = [decision, validator]
+    FAKE.nondet.exec_prompt = lambda prompt, **kwargs: json.dumps(outputs.pop(0))
+    with pytest.raises(UserError):
+        c.evaluate_contributions(id)
+    assert not FAKE.transfers and json.loads(c.get_project(id))['status'] == 'FROZEN'
+
+
+def test_custom_criteria_and_invalid_reference_fail_closed(fixture):
+    c, _ = fixture
+    acting(ADDR[0], 20)
+    with pytest.raises(UserError):
+        c.create_project_with_criteria('Title', 'Brief', '["one", "two"]', ADDR[1], ADDR[2], ADDR[3], 0)
+    project_id = c.create_project_with_criteria(
+        'Technical report', 'Assess the actual authored passages.',
+        '["Address the threat model.","Include a reproducible correction.","Integrate and attribute the final text."]',
+        ADDR[1], ADDR[2], ADDR[3], 0,
+    )
+    for address in ADDR[1:4]:
+        acting(address); c.join_project(project_id)
+    acting(ADDR[1])
+    with pytest.raises(UserError):
+        c.submit_contribution_with_references(project_id, 'Correction text', '["1:1"]')
+
 def test_decision_with_uncontrolled_payment_fields_rejected(fixture):
     c,_=fixture;id=fully_submitted(c)
-    FAKE.nondet.exec_prompt=lambda prompt, **kwargs:json.dumps({
-        'complete':True,'weights':[5,3,1],'evidence_ids':[['0:1'],['1:1'],['2:1']],
-        'reason':'leader','amounts_wei':['90','0','0'],
-    })
+    forged = _decision()
+    forged['amounts_wei'] = ['90', '0', '0']
+    FAKE.nondet.exec_prompt=lambda prompt, **kwargs:json.dumps(forged)
     with pytest.raises(UserError):c.evaluate_contributions(id)
     assert not FAKE.transfers
 
@@ -197,7 +289,7 @@ def test_malformed_llm_output_fails_closed(fixture):
 
 def test_incomplete_report_refunds_sponsor(fixture):
     c,_=fixture;id=fully_submitted(c)
-    FAKE.nondet.exec_prompt=lambda prompt, **kwargs:json.dumps({'complete':False,'weights':[0,0,0], 'evidence_ids':[[],[],[]], 'reason':'Not completed'})
+    FAKE.nondet.exec_prompt=lambda prompt, **kwargs:json.dumps(_decision(complete=False, effects=('none', 'none', 'none'), refs=[[], [], []]))
     c.evaluate_contributions(id)
     assert FAKE.transfers==[(ADDR[0],90)] and json.loads(c.get_project(id))['status']=='REFUND_EMITTED'
 
@@ -218,7 +310,9 @@ def test_timeout_fallback_and_freeze(fixture):
 
 def test_invalid_result_is_never_paid(fixture):
     c,_=fixture;id=fully_submitted(c)
-    FAKE.nondet.exec_prompt=lambda prompt, **kwargs:json.dumps({'complete':True,'weights':[100,0,0],'evidence_ids':[['0:1'],[],[]],'reason':'fake'})
+    forged = _decision()
+    forged['assessments'][0]['material_effect'] = 'bogus'
+    FAKE.nondet.exec_prompt=lambda prompt, **kwargs:json.dumps(forged)
     with pytest.raises(UserError):c.evaluate_contributions(id)
     assert not FAKE.transfers
 
