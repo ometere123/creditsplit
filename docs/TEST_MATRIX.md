@@ -5,16 +5,16 @@ Commands below are the source-matched checks used for this tree. They are eviden
 | Area | Command | Current evidence |
 | --- | --- | --- |
 | Offline state/adversarial harness | `py -3.12 -m pytest -q tests/test_contract_offline.py` | 20 passed locally |
-| Actual GenLayer Direct Mode | `py -3.12 -m pytest -q tests/direct/` | 10 passed locally against `genlayer-test==0.29.2` and the pinned runner |
+| Actual GenLayer Direct Mode | `py -3.12 -m pytest -q tests/direct/` | 15 passed locally against `genlayer-test==0.29.2` and the pinned runner |
 | AST + semantic GenVM lint | `$env:GENVM_VERSION='v0.2.16'; genvm-lint check contracts/Creditsplit.py --json` | Passed: 15 methods, 5 views, 10 writes |
 | Python syntax | `py -3.12 -m compileall -q contracts` | Passed locally |
 | Frontend install | `npm ci` in root and `frontend/` | Passed locally; lockfiles are committed |
 | Strict TypeScript | `npm run typecheck` in `frontend/` | Passed locally |
-| Frontend unit tests | `npm test` in `frontend/` | 8 passed locally |
+| Frontend unit tests | `npm test` in `frontend/` | 11 passed locally |
 | Production build | `npm run build` in `frontend/` | Passed locally |
 | Runtime dependency audit | `npm audit --omit=dev --audit-level=high` at repository root and `npm audit --audit-level=high` in `frontend/` | 0 vulnerabilities in runtime/frontend dependency sets |
 | Browser smoke | `npm run test:e2e` in `frontend/` | 2 passed in CI run [40034433525](https://github.com/ometere123/creditsplit/actions/runs/40034433525): Chromium desktop and Pixel 7 |
-| StudioNet lifecycle | Signed writes against chain 61999 | Deployment attempted with the final source; finalized `Undetermined` / `NO_MAJORITY` with leader `UNKNOWN`, no address created. The RPC also reports consensus/staking contracts unavailable. |
+| StudioNet lifecycle | Read-only RPC + official Explorer | Three submitted hashes are protocol `Send` records with the Creditsplit source embedded in the signed rollup payload, but no validators, rounds or votes; all are `FINALIZED`/`NO_MAJORITY`/`UNKNOWN` with no contract address. The dashboard reports active validators and successful unrelated deployments, so the precise per-submission activation failure remains unresolved. |
 | Vercel production | Actual public deployment URL | Not run: no Creditsplit project exists in the connected Vercel team, and deployment requires the verified contract address |
 
 Direct Mode captures the validator callback and exercises contract state transitions, but it cannot prove that production consensus validators agree or that an external GEN message changed a real EOA balance. Those claims require the signed StudioNet evidence ledger described in `docs/REVIEW_EVIDENCE.md`.

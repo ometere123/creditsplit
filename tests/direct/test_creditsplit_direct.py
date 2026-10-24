@@ -193,3 +193,81 @@ def test_permissionless_recruitment_refund_after_deadline(
     project = json.loads(contract.get_project(project_id))
     assert project["status"] == "REFUND_EMITTED"
     assert int(contract.active_escrow) == 0
+
+
+def test_direct_revision_bounds_and_utf8_limits(
+    direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
+):
+    contract = direct_deploy(CONTRACT)
+    contributors = [direct_bob, direct_charlie, direct_accounts[4]]
+    project_id = _create(contract, direct_vm, direct_alice, contributors)
+    _join_all(contract, direct_vm, contributors, project_id)
+    direct_vm.sender = direct_bob
+    contract.submit_contribution(project_id, "first immutable version")
+    contract.submit_contribution(project_id, "second immutable version")
+    with direct_vm.expect_revert("maximum two revisions"):
+        contract.submit_contribution(project_id, "third version")
+    with direct_vm.expect_revert("contribution length invalid"):
+        contract.submit_contribution(project_id, "🦄" * 301)
+
+
+def test_direct_digest_tampering_fails_closed(
+    direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
+):
+    contract = direct_deploy(CONTRACT)
+    contributors = [direct_bob, direct_charlie, direct_accounts[4]]
+    project_id = _fully_frozen(contract, direct_vm, direct_alice, contributors)
+    project = json.loads(contract.get_project(project_id))
+    project["brief"] = "tampered after the evidence digest was recorded"
+    contract.projects[project_id] = json.dumps(project, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    with direct_vm.expect_revert("evidence integrity failure"):
+        contract.evaluate_contributions(project_id)
+
+
+def test_direct_validator_rejects_a_different_substantive_answer(
+    direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
+):
+    contract = direct_deploy(CONTRACT)
+    contributors = [direct_bob, direct_charlie, direct_accounts[4]]
+    project_id = _fully_frozen(contract, direct_vm, direct_alice, contributors)
+    good = '{"complete":true,"weights":[5,3,1],"evidence_ids":[["0:1"],["1:1"],["2:1"]],"reason":"Evidence supports the completed report."}'
+    direct_vm.mock_llm(r"EVIDENCE_DIGEST=.*", good)
+    contract.evaluate_contributions(project_id)
+    direct_vm.clear_mocks()
+    direct_vm.mock_llm(
+        r"EVIDENCE_DIGEST=.*",
+        '{"complete":true,"weights":[0,3,5],"evidence_ids":[[],["1:1"],["2:1"]],"reason":"Different independent assessment."}',
+    )
+    assert direct_vm.run_validator(leader_result=json.loads(good)) is False
+
+
+def test_direct_extra_payment_fields_cannot_control_settlement(
+    direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
+):
+    contract = direct_deploy(CONTRACT)
+    contributors = [direct_bob, direct_charlie, direct_accounts[4]]
+    project_id = _fully_frozen(contract, direct_vm, direct_alice, contributors)
+    direct_vm.mock_llm(
+        r"EVIDENCE_DIGEST=.*",
+        '{"complete":true,"weights":[5,3,1],"evidence_ids":[["0:1"],["1:1"],["2:1"]],"reason":"forged","amounts_wei":["90","0","0"]}',
+    )
+    with direct_vm.expect_revert("invalid validator-agreed judgment"):
+        contract.evaluate_contributions(project_id)
+    assert json.loads(contract.get_project(project_id))["status"] == "FROZEN"
+
+
+def test_direct_multiple_projects_keep_escrow_isolated(
+    direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
+):
+    contract = direct_deploy(CONTRACT)
+    contributors = [direct_bob, direct_charlie, direct_accounts[4]]
+    first = _fully_frozen(contract, direct_vm, direct_alice, contributors)
+    second = _create(contract, direct_vm, direct_alice, contributors, value=16)
+    assert int(contract.active_escrow) == 106
+    direct_vm.mock_llm(
+        r"EVIDENCE_DIGEST=.*",
+        '{"complete":true,"weights":[5,3,1],"evidence_ids":[["0:1"],["1:1"],["2:1"]],"reason":"Evidence supports the completed report."}',
+    )
+    contract.evaluate_contributions(first)
+    assert int(contract.active_escrow) == 16
+    assert json.loads(contract.get_project(second))["pool_wei"] == "16"

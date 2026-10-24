@@ -6,7 +6,7 @@ Creditsplit is a single-scope Social / Creator Rewards / Contributor Reputation 
 
 ## Status and honesty
 
-**Source implementation verified locally and in GitHub Actions; NOT deployed or verified end-to-end.** No contract address, finalized receipts, payment confirmations or 5/5/5/5 review score have been established. The frontend refuses writes without `NEXT_PUBLIC_CONTRACT_ADDRESS`. Current evidence is 20 offline tests, 10 Direct Mode tests, 8 Vitest tests, strict TypeScript, a production build, and 2 Playwright smoke tests across desktop and mobile; StudioNet transactions, source-matched deployment, Vercel release and outbound transfer reconciliation remain mandatory gates.
+**Source implementation verified locally and in GitHub Actions; NOT deployed or verified end-to-end.** No contract address, successful contract execution, payment confirmations or 5/5/5/5 review score have been established. Three StudioNet submissions were routed to the consensus-main endpoint but finalized before validator assignment (`NO_MAJORITY`, `UNKNOWN`, no address). The frontend refuses writes without `NEXT_PUBLIC_CONTRACT_ADDRESS`. Current evidence is 20 offline tests, 15 Direct Mode tests, 11 Vitest tests, strict TypeScript, a production build, and 2 Playwright smoke tests across desktop and mobile; a minimal diagnostic deployment, source-matched deployment, Vercel release and outbound transfer reconciliation remain mandatory gates.
 
 ## Locked environment
 

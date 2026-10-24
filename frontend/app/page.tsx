@@ -1,7 +1,7 @@
 'use client';
 import {useCallback,useEffect,useMemo,useState, type FormEvent} from 'react';
 import {ArrowRight,ArrowUpRight,BookOpen,Check,ChevronDown,Clock3,Copy,ExternalLink,FileClock,FileText,Fingerprint,GitBranch,Globe2,Info,Layers3,Link2,LockKeyhole,Menu,Plus,Scale,Search,ShieldCheck,Sparkles,Users,Wallet,X} from 'lucide-react';
-import {configured,connectWallet,CONTRACT_ADDRESS,EXPLORER,readContract,waitForSuccessfulFinalization,writeAndConfirm} from '../lib/chain';
+import {configured,connectWallet,CONTRACT_ADDRESS,EXPLORER,isFinalizedExecutionFailure,makeSubmittedTransaction,parseSubmittedTransaction,recoveryMatchesWallet,SUBMITTED_TX_KEY,readContract,waitForSuccessfulFinalization,writeAndConfirm,type SubmittedTransaction} from '../lib/chain';
 import {bytes,currentDeadline,EMPTY_PROFILE,formatDate,formatGen,getSlot,parseGen,shortAddress,validateProjectInput,type Profile,type Project,type ProjectPreview,type Packet} from '../lib/types';
 
 type Page='discover'|'create'|'project'|'profile'|'how';
@@ -26,7 +26,7 @@ export default function Home(){
   const [error,setError]=useState('');
   const [pending,setPending]=useState(false);
   const [txHash,setTxHash]=useState('');
-  const [unresolvedHash,setUnresolvedHash]=useState('');
+  const [recovery,setRecovery]=useState<SubmittedTransaction|null>(null);
   const [title,setTitle]=useState(''); const [brief,setBrief]=useState('');
   const [invites,setInvites]=useState(['','','']);const [assembler,setAssembler]=useState(0);
   const [reward,setReward]=useState('');const [acceptedTerms,setAcceptedTerms]=useState(false);
@@ -34,8 +34,8 @@ export default function Home(){
   const [sourceRefs,setSourceRefs]=useState<string[]>([]); const [response,setResponse]=useState('');
   const [loadMore,setLoadMore]=useState(20);
   useEffect(()=>{
-    const saved=window.localStorage.getItem('creditsplit:submitted-tx');
-    if(saved){setUnresolvedHash(saved);setTxHash(saved);setStatus('A submitted transaction needs reconciliation before another write.');}
+    const saved=parseSubmittedTransaction(window.localStorage.getItem(SUBMITTED_TX_KEY));
+    if(saved){setRecovery(saved);setTxHash(saved.hash);setStatus('A submitted transaction needs reconciliation before another write.');}
   },[]);
   const loadProject=useCallback(async(id:number)=>{if(!configured)return;const raw=await readContract<string>('get_project',[id]); if(!raw)throw new Error('Project not found.');setProject(JSON.parse(raw) as Project);},[]);
   const refresh=useCallback(async()=>{
@@ -54,28 +54,37 @@ export default function Home(){
   },[loadMore,loadProject,project?.id,wallet]);
   useEffect(()=>{void refresh().catch(e=>setError(String(e)));},[configured,loadMore,wallet,project?.id]);
   useEffect(()=>{const id=Number(new URLSearchParams(window.location.search).get('project'));if(Number.isInteger(id)&&id>0&&configured){void loadProject(id).then(()=>setPage('project')).catch(e=>setError(String(e)));}},[loadProject]);
-  useEffect(()=>{const eth=window.ethereum;if(!eth?.on)return;const listener=()=>{setWallet('');setStatus('Wallet changed. Reconnect before signing.');};eth.on('accountsChanged',listener);eth.on('chainChanged',listener);return()=>eth.removeListener?.('accountsChanged',listener);},[]);
+  useEffect(()=>{const eth=window.ethereum;if(!eth?.on)return;const listener=()=>{setWallet('');setProject(null);setStatus('Wallet or network changed. Reconnect to StudioNet before signing.');};eth.on('accountsChanged',listener);eth.on('chainChanged',listener);return()=>{eth.removeListener?.('accountsChanged',listener);eth.removeListener?.('chainChanged',listener);};},[]);
   const selectedSlot=project&&wallet?getSlot(project,wallet):-1;
   const joined=project?.joined.filter(Boolean).length??0;
   const availablePackets=project?.packets.flat()??[];
   const displayProjects=projects.filter(p=>(p.title+' '+p.brief+' '+p.status).toLowerCase().includes(filter.toLowerCase()));
   const currentStage=project?.status??'';
+  const unresolvedHash=recoveryMatchesWallet(recovery,wallet)?recovery?.hash??'':'';
   const canOperate=configured&&!!wallet&&!pending&&!unresolvedHash;
   async function attachWallet(){setError('');try{const w=await connectWallet();setWallet(w);setStatus('Wallet connected to StudioNet 61999.');}catch(e){setError(String(e));}}
   async function execute(method:string,args:unknown[]=[],value=0n){
     if(!wallet)throw new Error('Connect MetaMask first.');
-    if(unresolvedHash)throw new Error(`Transaction ${shortAddress(unresolvedHash)} is already submitted. Reconcile it before signing again.`);
+    if(unresolvedHash)throw new Error(`Transaction ${shortAddress(unresolvedHash)} is already submitted for this wallet and contract. Reconcile it before signing again.`);
     setPending(true);setError('');setTxHash('');setStatus('Preparing the wallet transaction and requesting your signature…');
     let submitted='';let confirmed=false;
     try {
-      await writeAndConfirm(method,args,value,wallet,(hash)=>{submitted=hash;setTxHash(hash);window.localStorage.setItem('creditsplit:submitted-tx',hash);setStatus('Submitted. Waiting for verified finalization; do not re-submit.');});
+      await writeAndConfirm(method,args,value,wallet,(hash)=>{submitted=hash;const record=makeSubmittedTransaction(hash,wallet,method);setRecovery(record);setTxHash(hash);window.localStorage.setItem(SUBMITTED_TX_KEY,JSON.stringify(record));setStatus('Submitted. Waiting for verified finalization; do not re-submit.');});
       confirmed=true;
-      window.localStorage.removeItem('creditsplit:submitted-tx');setUnresolvedHash('');
+      window.localStorage.removeItem(SUBMITTED_TX_KEY);setRecovery(null);
       setStatus('Transaction finalized with successful execution. Transfer delivery, where applicable, still requires independent explorer/balance verification.');
       await refresh();
       return true;
     }catch(e){
-      if(submitted&&!confirmed){setUnresolvedHash(submitted);setStatus('Transaction was submitted, but finalization could not be verified. Do not sign again; reconcile the existing hash.');}
+      if(submitted&&!confirmed){
+        if(isFinalizedExecutionFailure(e)){
+          window.localStorage.removeItem(SUBMITTED_TX_KEY);setRecovery(null);
+          setStatus('The submitted transaction reached finalization but execution failed. No successful state change was verified; it is safe to retry after checking the current state.');
+        }else{
+          const record=makeSubmittedTransaction(submitted,wallet,method);setRecovery(record);window.localStorage.setItem(SUBMITTED_TX_KEY,JSON.stringify(record));
+          setStatus('Transaction was submitted, but finalization could not be verified. Do not sign again; reconcile the existing hash.');
+        }
+      }
       setError(e instanceof Error?e.message:String(e));return false;
     }
     finally{setPending(false);}
@@ -85,10 +94,17 @@ export default function Home(){
     setPending(true);setError('');setStatus('Checking the existing transaction; no new transaction will be signed…');
     try{
       await waitForSuccessfulFinalization(unresolvedHash);
-      window.localStorage.removeItem('creditsplit:submitted-tx');setUnresolvedHash('');
+      window.localStorage.removeItem(SUBMITTED_TX_KEY);setRecovery(null);
       setStatus('Existing transaction finalized with successful execution. Refreshing on-chain state.');
       await refresh();
-    }catch(e){setError(e instanceof Error?e.message:String(e));setStatus('The submitted transaction is still unresolved. Keep the hash and retry reconciliation later; do not sign a duplicate.');}
+    }catch(e){
+      if(isFinalizedExecutionFailure(e)){
+        window.localStorage.removeItem(SUBMITTED_TX_KEY);setRecovery(null);
+        setStatus('The existing transaction is finalized but its execution failed. The recovery lock is cleared; retry only after checking the current on-chain state.');
+      }else{
+        setError(e instanceof Error?e.message:String(e));setStatus('The submitted transaction is still unresolved. Keep the hash and retry reconciliation later; do not sign a duplicate.');
+      }
+    }
     finally{setPending(false);}
   }
   function openProject(id:number){setError('');setStatus('');setDetailTab('overview');window.history.replaceState(null,'',`/?project=${id}`);setPage('project');void loadProject(id).catch(e=>setError(String(e)));}
@@ -103,7 +119,7 @@ export default function Home(){
     </div></header>
     <main>
       {!configured&&<div className="notice deployment-notice"><Info size={16}/><div><strong>Source build · Not deployed.</strong> Set <code>NEXT_PUBLIC_CONTRACT_ADDRESS</code> only after a verified StudioNet 61999 deployment. Actions are intentionally disabled until then.</div></div>}
-      {(error||status||txHash||unresolvedHash)&&<div className="feedback" role="status">{error&&<div className="feedback-error"><X size={16}/>{error}</div>}{status&&<div className="feedback-status"><Info size={16}/>{status}</div>}{txHash&&<a href={`${EXPLORER}/tx/${encodeURIComponent(txHash)}`} target="_blank" rel="noreferrer">View transaction {shortAddress(txHash)} <ArrowUpRight size={14}/></a>}{unresolvedHash&&<div className="feedback-status"><ShieldCheck size={16}/><span>Existing submission locked: {shortAddress(unresolvedHash)}. No duplicate write is allowed.</span><Button variant="secondary" disabled={pending} onClick={()=>void reconcileSubmitted()}>Re-check existing transaction</Button></div>}</div>}
+      {(error||status||txHash||unresolvedHash)&&<div className="feedback" role="status">{error&&<div className="feedback-error"><X size={16}/>{error}</div>}{status&&<div className="feedback-status"><Info size={16}/>{status}</div>}{txHash&&<a href={`${EXPLORER}/tx/${encodeURIComponent(txHash)}`} target="_blank" rel="noreferrer">View transaction {shortAddress(txHash)} <ArrowUpRight size={14}/></a>}{unresolvedHash&&<div className="feedback-status"><ShieldCheck size={16}/><span>Existing {recovery?.method??'wallet'} submission locked: {shortAddress(unresolvedHash)}. No duplicate write is allowed.</span><Button variant="secondary" disabled={pending} onClick={()=>void reconcileSubmitted()}>Re-check existing transaction</Button></div>}</div>}
       {page==='discover'&&<>
         <section className="hero"><div className="hero-copy"><div className="eyebrow"><span className="eyebrow-dot"/> BUILT ON GENLAYER · PROOF OVER PROMISES</div><h1>Great work is<br/><em>never done alone.</em></h1><p>Commission meaningful collaborations. Give every contribution a verifiable history. Let independent consensus determine fair rewards.</p><div className="hero-actions"><Button onClick={()=>navigate('create')}>Fund a collaboration <ArrowRight size={17}/></Button><Button variant="secondary" onClick={()=>navigate('how')}>See how it works <ArrowUpRight size={17}/></Button></div><div className="hero-facts"><span><ShieldCheck size={16}/> Independent assessment</span><span><LockKeyhole size={16}/> Locked GEN escrow</span><span><Fingerprint size={16}/> Signed provenance</span></div></div>
           <div className="hero-art" aria-hidden="true"><div className="orb orb-one"/><div className="orb orb-two"/><div className="floating-document"><div className="document-header"><div className="small-mark"><Layers3 size={17}/></div><span>COLLABORATION · EVIDENCE</span><Check size={16}/></div><div className="doc-line wide"/><div className="doc-line mid"/><div className="doc-line small"/><div className="doc-divider"/><div className="doc-label">CONTRIBUTION TRACE</div><div className="document-role"><div className="avatar av-blue">A</div><div className="doc-role-content"><span>Original research</span><div className="doc-line mid"/></div><span className="role-points">05</span></div><div className="document-role"><div className="avatar av-lilac">B</div><div className="doc-role-content"><span>Technical verification</span><div className="doc-line small"/></div><span className="role-points">03</span></div><div className="document-role"><div className="avatar av-gold">C</div><div className="doc-role-content"><span>Editorial support</span><div className="doc-line small"/></div><span className="role-points">01</span></div><div className="doc-result"><ShieldCheck size={19}/><span>Evidence assessed independently</span></div></div><div className="float-proof"><Sparkles size={18}/><span>Credit follows contribution.</span></div></div>
