@@ -1,9 +1,5 @@
 # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
-"""Creditsplit: public, capped, three-creator GenLayer escrow and attribution.
 
-No backend is trusted. The accepted validator judgment determines the weights;
-wei allocation and finalization-triggered GEN transfers are deterministic.
-"""
 from genlayer import *
 from datetime import datetime, timezone
 import hashlib
