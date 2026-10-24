@@ -6,7 +6,7 @@ Creditsplit is a single-scope Social / Creator Rewards / Contributor Reputation 
 
 ## Status and honesty
 
-**Source implementation verified locally and in GitHub Actions; NOT deployed or verified end-to-end.** No contract address, successful contract execution, payment confirmations or 5/5/5/5 review score have been established. Three StudioNet submissions were routed to the consensus-main endpoint but finalized before validator assignment (`NO_MAJORITY`, `UNKNOWN`, no address). The frontend refuses writes without `NEXT_PUBLIC_CONTRACT_ADDRESS`. Current evidence is 20 offline tests, 15 Direct Mode tests, 11 Vitest tests, strict TypeScript, a production build, and 2 Playwright smoke tests across desktop and mobile; a minimal diagnostic deployment, source-matched deployment, Vercel release and outbound transfer reconciliation remain mandatory gates.
+**Source-matched StudioNet deployment and one live synthetic lifecycle are verified.** Creditsplit is deployed at [`0xB8d8Cc8384a0eaeFFC7998521E2a4fFD8deFC5C3`](https://explorer-studio.genlayer.com/address/0xB8d8Cc8384a0eaeFFC7998521E2a4fFD8deFC5C3) on chain 61999. The deployment transaction [`0x07d2c917d0c004836b8c8b20ce8501fb560cac1a3e4972c3157874e2c4c7ee28`](https://explorer-studio.genlayer.com/tx/0x07d2c917d0c004836b8c8b20ce8501fb560cac1a3e4972c3157874e2c4c7ee28) finalized with `MAJORITY_AGREE`; the deployed source is byte-identical to the checked-out `contracts/Creditsplit.py` (`4321A21BB8240445F0BC0EC4D4D26AFA2DA0A6D03FE71226030B39176D1C5B8D`). The live lifecycle proved payable escrow, three-wallet permissions, immutable packet storage, evidence freezing, independent consensus, deterministic allocation, emitted child messages and recipient balance increases. Its packets were synthetic strings submitted for protocol verification; no external documents or contribution sources were fetched. This is not a 5/5/5/5 self-certification, and recruitment/incomplete-deliverable refund receipts and public Vercel deployment remain separately tracked.
 
 ## Locked environment
 
@@ -62,15 +62,15 @@ npm run dev
 
 The repository and frontend each have a committed npm lockfile. Direct Mode pins the compatible `v0.2.16` GenVM universal bundle because `genlayer-test==0.29.2` downloads the legacy `genvm-universal.tar.xz` asset. The linter uses the same explicit version and validates the pinned `py-genlayer` hash.
 
-Set `NEXT_PUBLIC_CONTRACT_ADDRESS` only after StudioNet deployment is proven source-matched. Deployment environment variables must contain **no private keys** in the frontend or Vercel configuration.
+Set `NEXT_PUBLIC_CONTRACT_ADDRESS=0xB8d8Cc8384a0eaeFFC7998521E2a4fFD8deFC5C3` for the verified StudioNet build. Deployment environment variables must contain **no private keys** in the frontend or Vercel configuration.
 
 ## Essential deployment/verification gates
 
 1. Confirm actual CLI 0.39.1 + SDK 1.1.8 compatibility and Python SDK pinned `Depends` against StudioNet.
 2. Run AST and GenVM semantic lint; GenLayer Test Direct Mode leader/validator fault injection; real network deploy and source comparison.
-3. Demonstrate the complete create/fund/join/submit/assemble/respond/freeze/evaluate flow with **three actual wallet actors**, confirmed `FINALIZED` and successful execution for every write.
+3. Demonstrate the complete create/fund/join/submit/assemble/respond/freeze/evaluate flow with **three actual wallet actors**, confirmed `FINALIZED` and successful execution for every write. The current ledger does this with synthetic submitted packets; it does not prove external authorship.
 4. Inspect finalization-triggered EOA transfer messages **and recipient balance deltas**; verify recipient totals equal escrow input. Emission alone is not proof of payment.
-5. Test recruitment refund, incomplete work refund, invalid leader outcome, forged evidence ID, consensus disagreement, timeout/unavailable provider, duplicate transaction avoidance and mixed-project accounting.
+5. Test recruitment refund, incomplete work refund, invalid leader outcome, forged evidence ID, consensus disagreement, timeout/unavailable provider, duplicate transaction avoidance and mixed-project accounting. The local suites cover these adversarial paths; live refund receipts remain pending because StudioNet deadlines are wall-clock enforced.
 6. Confirm contract ABI/public method names, fee estimation and StudioNet browser wallet paths from actual signed transactions; repair genuine incompatibilities, rerun tests and redeploy source-matched if changes occur.
 
 See `docs/REVIEW_EVIDENCE.md` for the exact reviewer-facing evidence ledger. The final Codex handoff prompt is intentionally provided **in chat only**, not in this repository.

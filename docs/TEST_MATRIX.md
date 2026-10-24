@@ -1,6 +1,6 @@
 # Verification matrix
 
-Commands below are the source-matched checks used for this tree. They are evidence of local execution only; they do not prove a StudioNet deployment or external GEN payment.
+Commands below are the source-matched checks used for this tree. The StudioNet rows link to live external evidence; synthetic packet content is explicitly not external authorship proof.
 
 | Area | Command | Current evidence |
 | --- | --- | --- |
@@ -13,10 +13,11 @@ Commands below are the source-matched checks used for this tree. They are eviden
 | Frontend unit tests | `npm test` in `frontend/` | 11 passed locally |
 | Production build | `npm run build` in `frontend/` | Passed locally |
 | Runtime dependency audit | `npm audit --omit=dev --audit-level=high` at repository root and `npm audit --audit-level=high` in `frontend/` | 0 vulnerabilities in runtime/frontend dependency sets |
-| Browser smoke | `npm run test:e2e` in `frontend/` | 2 passed in CI run [40069563524](https://github.com/ometere123/creditsplit/actions/runs/40069563524): Chromium desktop and Pixel 7 |
-| StudioNet lifecycle | Read-only RPC + official Explorer | Three submitted hashes are protocol `Send` records with the Creditsplit source embedded in the signed rollup payload, but no validators, rounds or votes; all are `FINALIZED`/`NO_MAJORITY`/`UNKNOWN` with no contract address. The dashboard reports active validators and successful unrelated deployments, so the precise per-submission activation failure remains unresolved. |
-| Vercel production | Actual public deployment URL | Not run: no Creditsplit project exists in the connected Vercel team, and deployment requires the verified contract address |
+| Browser smoke | `npm run test:e2e` in `frontend/` | 2 passed in the prior verified CI run; the exact run for the final pushed commit is linked from the completion report |
+| StudioNet deployment | Pinned CLI 0.39.1 + StudioNet RPC | Diagnostic and Creditsplit deployments finalized with `MAJORITY_AGREE`; Creditsplit address `0xB8d8Cc8384a0eaeFFC7998521E2a4fFD8deFC5C3`, source byte match and initial readback are recorded in `docs/REVIEW_EVIDENCE.md`. |
+| StudioNet lifecycle | SDK writes + RPC readback + official Explorer | One funded synthetic lifecycle completed: three joins, packets, assembly, attribution, freeze, evaluation, deterministic `[3,3,3]` allocation and three child transfer messages. Recipient balances moved `0.1 → 0.11 GEN` each. Recruitment/incomplete-refund live deadlines remain unexercised. |
+| Vercel production | Actual public deployment URL | Pending; no URL is claimed until a production deployment is created and browser-tested with the verified contract address. |
 
-Direct Mode captures the validator callback and exercises contract state transitions, but it cannot prove that production consensus validators agree or that an external GEN message changed a real EOA balance. Those claims require the signed StudioNet evidence ledger described in `docs/REVIEW_EVIDENCE.md`.
+Direct Mode captures the validator callback and exercises contract state transitions, but it cannot prove production consensus or real EOA balance changes. The live evidence ledger does prove those specific synthetic lifecycle observations, while remaining explicit that no external contribution source was fetched.
 
 The full root development-tree audit still reports transitive advisories bundled by the required `genlayer@0.39.1` CLI (including its old test dependency). The CI gate intentionally audits the root runtime set with `--omit=dev`; replacing or overriding that CLI's dependency graph would violate the locked CLI requirement. The frontend dependency audit is clean without an exception.
