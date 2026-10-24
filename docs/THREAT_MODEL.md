@@ -16,6 +16,7 @@ Sponsor manipulating final assembly; invited contributor copying prior submissio
 4. Freeze hash over canonical evidence; only FROZEN can be evaluated; one-time state transition and no separate claims block double settlement.
 5. Validator independently re-executes evidence-grounded semantic task; payment-driving fields match exactly; deterministic recipients, amounts and rounding.
 6. `EMITTED_UNVERIFIED` transfer label makes the lack of delivery callback explicit. Inspect child messages and actual wallet balances.
+7. The live adversarial case attempted an unregistered final source reference (`0:999`) and the contract finalized the call with execution `ERROR` without changing assembly state.
 
 ## Known limits, not hidden assumptions
 

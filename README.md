@@ -6,7 +6,7 @@ Creditsplit is a single-scope Social / Creator Rewards / Contributor Reputation 
 
 ## Status and honesty
 
-**Source-matched StudioNet deployment and one live synthetic lifecycle are verified.** Creditsplit is deployed at [`0xB8d8Cc8384a0eaeFFC7998521E2a4fFD8deFC5C3`](https://explorer-studio.genlayer.com/address/0xB8d8Cc8384a0eaeFFC7998521E2a4fFD8deFC5C3) on chain 61999. The deployment transaction [`0x07d2c917d0c004836b8c8b20ce8501fb560cac1a3e4972c3157874e2c4c7ee28`](https://explorer-studio.genlayer.com/tx/0x07d2c917d0c004836b8c8b20ce8501fb560cac1a3e4972c3157874e2c4c7ee28) finalized with `MAJORITY_AGREE`; the deployed source is byte-identical to the checked-out `contracts/Creditsplit.py` (`4321A21BB8240445F0BC0EC4D4D26AFA2DA0A6D03FE71226030B39176D1C5B8D`). The live lifecycle proved payable escrow, three-wallet permissions, immutable packet storage, evidence freezing, independent consensus, deterministic allocation, emitted child messages and recipient balance increases. Its packets were synthetic strings submitted for protocol verification; no external documents or contribution sources were fetched. This is not a 5/5/5/5 self-certification, and recruitment/incomplete-deliverable refund receipts and public Vercel deployment remain separately tracked.
+**Source-matched StudioNet deployment and live evidence-based lifecycles are verified.** Creditsplit is deployed at [`0xaa14cb0B1f6c4868096Ef70dE131B93037B324fD`](https://explorer-studio.genlayer.com/address/0xaa14cb0B1f6c4868096Ef70dE131B93037B324fD) on chain 61999. The deployment transaction [`0x0291a6fc1967b16b2479dce2bd26a5d3febbb0a06e43b8336e0f13dda6ad6dbe`](https://explorer-studio.genlayer.com/tx/0x0291a6fc1967b16b2479dce2bd26a5d3febbb0a06e43b8336e0f13dda6ad6dbe) finalized with `MAJORITY_AGREE`; the registered source is byte-identical to the checked-out `contracts/Creditsplit.py` (`5961AF1206D162BE60CE8756C2099B497FE81743924F7EB1393D893F5388551A`). The completed lifecycle stored three authored passages, a cross-contributor correction chain, frozen evidence and validator-agreed weights `[5,3,1]`, then credited beneficiary balances by `0.05`, `0.03` and `0.01 GEN`. A separate live case rejected a forged source reference before evaluation and safely left an incomplete judgment inconclusive when validators disagreed. No external documents or contribution sources were fetched. This is not a 5/5/5/5 self-certification; live deadline refunds, Vercel production deployment and browser-wallet QA remain separately tracked.
 
 ## Locked environment
 
@@ -17,12 +17,12 @@ Creditsplit is a single-scope Social / Creator Rewards / Contributor Reputation 
 
 ## Product workflow
 
-1. Sponsor signs payable `create_project()` with GEN, a capped brief, three distinct invited wallet addresses and an assembler slot. Sponsor cannot be invited.
+1. Sponsor signs payable `create_project_with_criteria()` with GEN, a capped brief, exactly three immutable acceptance criteria, three distinct invited wallet addresses and an assembler slot. Sponsor cannot be invited.
 2. Three contributors independently `join_project()` within **48 hours**. Otherwise any caller can invoke `refund_unstarted_project()` after expiry.
 3. Each wallet submits up to **two immutable revisions**, signs `finish_contributing()` and can inspect others' versions. Contribution window: **72 hours** from full recruitment, or closes early when all finish.
 4. The assigned assembler submits a final text document and references authentic packet IDs within **24 hours**. If absent by deadline, a permissionless `advance_project()` creates a deterministic, explicitly flagged fallback compilation.
 5. Each contributor has **24 hours** to submit one optional attribution response and acknowledgment. `freeze_project()` computes a SHA-256 digest over a canonical evidence snapshot.
-6. `evaluate_contributions()` asks the leader to judge completion and bands **0 / 1 / 3 / 5**. Each validator independently re-runs the task, checks evidence-linked bands, and compares **all payment-controlling fields**. An undecided or failed assessment does not settle funds.
+6. `evaluate_contributions()` asks the leader to judge the actual passages against the three criteria. Each contributor receives bounded classifications for relevance, distinctness, correctness, material effect and attribution consistency. Each validator independently re-runs the task over the same frozen evidence, checks authentic packet/source references, and compares **all payment-controlling classifications**. Explanations and equivalent supporting references may differ; an undecided or failed assessment does not settle funds.
 7. For passing deliverables, exact wei shares follow verified bands with the integer remainder assigned to the top band (lowest slot on ties). For incomplete work the full pool is refunded. EOA **external GEN messages** are emitted only for finalization; receipt/external-message/balance verification is required. No arbitrary claim path, no commission.
 8. Finalized on-chain classifications are incorporated into a wallet's reputation ledger; prior reputation never influences current payout.
 
@@ -30,7 +30,7 @@ All evidence is **public** and qualifying work is submitted under **CC BY 4.0** 
 
 ## Structure
 
-- `contracts/Creditsplit.py` — one authoritative Intelligent Contract with custom EP.
+- `contracts/Creditsplit.py` — one authoritative Intelligent Contract with custom EP and evidence-based attribution engine.
 - `frontend/` — full responsive application; live reads and wallet writes (no fixtures masquerading as on-chain data).
 - `tests/test_contract_offline.py` — offline adversarial logic harness (not Direct Mode).
 - `tests/direct/` — actual pinned GenLayer Testing Suite Direct Mode coverage.
@@ -62,7 +62,7 @@ npm run dev
 
 The repository and frontend each have a committed npm lockfile. Direct Mode pins the compatible `v0.2.16` GenVM universal bundle because `genlayer-test==0.29.2` downloads the legacy `genvm-universal.tar.xz` asset. The linter uses the same explicit version and validates the pinned `py-genlayer` hash.
 
-Set `NEXT_PUBLIC_CONTRACT_ADDRESS=0xB8d8Cc8384a0eaeFFC7998521E2a4fFD8deFC5C3` for the verified StudioNet build. Deployment environment variables must contain **no private keys** in the frontend or Vercel configuration.
+Set `NEXT_PUBLIC_CONTRACT_ADDRESS=0xaa14cb0B1f6c4868096Ef70dE131B93037B324fD` for the verified StudioNet build. Deployment environment variables must contain **no private keys** in the frontend or Vercel configuration.
 
 ## Essential deployment/verification gates
 

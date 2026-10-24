@@ -1,55 +1,63 @@
-# Source-matched deployment runbook
+# Source-matched deployment and evidence ledger
 
-This runbook is intentionally executable only with an authorized, funded StudioNet wallet and the repository's GitHub/Vercel credentials. Do not put a private key or server wallet in this repository or frontend.
+This runbook uses only StudioNet chain `61999`, RPC `https://studio.genlayer.com/api`, repository-local `genlayer@0.39.1`, `genlayer-js@1.1.8`, Python 3.12 and native GEN. Never commit a wallet secret or configure one in Vercel.
 
-Current verification record (2026-10-24): Creditsplit is deployed on StudioNet 61999 at `0xB8d8Cc8384a0eaeFFC7998521E2a4fFD8deFC5C3`. The deployment transaction is [`0x07d2c917d0c004836b8c8b20ce8501fb560cac1a3e4972c3157874e2c4c7ee28`](https://explorer-studio.genlayer.com/tx/0x07d2c917d0c004836b8c8b20ce8501fb560cac1a3e4972c3157874e2c4c7ee28). It finalized with `MAJORITY_AGREE`, five committed/revealed validators, and successful leader/validator execution. `get_project_count()` returned `0` immediately after deployment and `get_accounting()` returned zero escrow and zero dispatched funds. `gen_getContractCode` decoded byte-for-byte to the checked-out source SHA-256 `4321A21BB8240445F0BC0EC4D4D26AFA2DA0A6D03FE71226030B39176D1C5B8D`.
+## Verified deployment
 
-The three earlier submissions narrowed to a StudioNet consensus-assignment/activation failure for those transactions, not a missing source file or an ordinary wallet-to-wallet send. They did not prove whether the remaining subcause was CLI/runtime encoding or a per-transaction protocol failure: `gen_dbg_traceTransaction` and `gen_getTransactionLifecycle` are unsupported by this RPC, and those transactions have no validator/round data to inspect. The later diagnostic and Creditsplit deployments establish that the current StudioNet path can succeed; the exact subcause of the earlier individual attempts remains unresolved.
+The redesigned source was committed at [`944f4643665e3c85edc2ae90471c24b6220409f6`](https://github.com/ometere123/creditsplit/commit/944f4643665e3c85edc2ae90471c24b6220409f6) and deployed with:
 
-The configured protocol address is `0xb7278A61aa25c888815aFC32Ad3cC52fF24fE575` (`...aFC32...`). The separately supplied address `0xb7278A61aa25c888815aF032Ad3cC52fF24fE575` (`...aF032...`) has zero balance and no code at the queried block and is not the configured protocol endpoint. `eth_getCode` returns `0x` for the protocol endpoint because it is not an Intelligent Contract address; `gen_getContractCode` returns `Contract not found`, confirming that it is neither a Creditsplit IC nor a registered Ghost. The actual Creditsplit IC is the distinct address above.
+```text
+npx --no-install genlayer deploy --contract contracts/Creditsplit.py --rpc https://studio.genlayer.com/api
+```
 
-The minimal no-LLM diagnostic contract was then deployed through the same pinned path at `0xF357362A1c1D725bC57B1F04e1c227D5532F94E9`, transaction [`0x5d1f38ef1599f26419046673a0df7794a8f15cd8c95970a7ae83fb530d6db3b7`](https://explorer-studio.genlayer.com/tx/0x5d1f38ef1599f26419046673a0df7794a8f15cd8c95970a7ae83fb530d6db3b7). It finalized with `MAJORITY_AGREE`; `get_value()` returned `7`, and its registered source matched the committed diagnostic file. This controlled success established that the earlier three submissions were not evidence of a general StudioNet validator outage.
+| Item | Verified value |
+| --- | --- |
+| Contract | [`0xaa14cb0B1f6c4868096Ef70dE131B93037B324fD`](https://explorer-studio.genlayer.com/address/0xaa14cb0B1f6c4868096Ef70dE131B93037B324fD) |
+| Deployment transaction | [`0x0291a6fc1967b16b2479dce2bd26a5d3febbb0a06e43b8336e0f13dda6ad6dbe`](https://explorer-studio.genlayer.com/tx/0x0291a6fc1967b16b2479dce2bd26a5d3febbb0a06e43b8336e0f13dda6ad6dbe) |
+| Consensus | `FINALIZED`, `MAJORITY_AGREE`, five validator votes revealed, leader/validator execution successful |
+| Windows checkout source SHA-256 | `5961AF1206D162BE60CE8756C2099B497FE81743924F7EB1393D893F5388551A` |
+| Registered source | `gen_getContractCode` decoded to the same SHA-256 and byte length `27612` |
+| Initial readback | `get_project_count() = 0`; accounting has zero active escrow and zero dispatched funds |
 
-The three earlier hashes remain failed deployment-path attempts: [A](https://explorer-studio.genlayer.com/tx/0x5871890bcccbcb55d1b3980f28e5e04953cfdafc21ddee5a7147d7b9e77fbe86), [B](https://explorer-studio.genlayer.com/tx/0x144c2cba41795aa9792c1bfb74d63575a4274a9c7bd4aab51ef8bd163915d3dd), and [C](https://explorer-studio.genlayer.com/tx/0x090f3314d1fa3f3bd2a8732a91e340e1f6098b89445e6d175ad11a2313569769). RPC and explorer evidence shows zero-value submissions to consensus-main with no validator assignment, no rounds, `NO_MAJORITY`, no contract address and no value credit. The exact subcause of those individual attempts remains unresolved, but the later diagnostic and Creditsplit deployments prove the current CLI/RPC/consensus path can work.
+The historical contract `0xB8d8Cc8384a0eaeFFC7998521E2a4fFD8deFC5C3` is not modified and is not the frontend target.
 
-Live lifecycle caveat: the verified funded lifecycle used three disposable wallets and synthetic packet text submitted directly through the contract. No external source document was fetched. It proves on-chain mechanics and consensus plumbing, not real-world authorship or external provenance.
+## Prior deployment-path failures
 
-## Contract
+Attempts A, B and C were zero-value outer `Send` transactions to the protocol consensus endpoint with no validator assignment, no round data, `NO_MAJORITY`, no contract address and no value credit. The RPC did not expose the requested trace/lifecycle methods, so the exact per-transaction encoding subcause cannot be proven. A minimal diagnostic deployment and the new Creditsplit deployment both succeeded through the pinned CLI/RPC path, disproving a general StudioNet outage. The destination seen in the earlier screenshot was not a registered Creditsplit IC.
 
-1. Check out the exact intended `main` commit and confirm `git status --short` is empty.
-2. Confirm Node 22, Python 3.12, local `genlayer --version` `0.39.1`, `genlayer-js` `1.1.8`, `genlayer-test` `0.29.2`, and `genvm-linter` `0.11.0`.
-3. Run the offline suite, Direct Mode suite, and semantic linter with `GENVM_VERSION=v0.2.16`. Record the full JSON linter output. Direct Mode is pinned to this compatible universal bundle for `genlayer-test==0.29.2`.
-4. Select StudioNet only: chain ID `61999`, RPC `https://studio.genlayer.com/api`. Confirm the CLI network configuration before signing.
-5. First deploy `contracts/DeploymentDiagnostic.py` once, using the same local CLI, wallet, RPC and chain. Treat it as a routing diagnostic only. Inspect its explorer type, validator assignment, execution result, returned address, `gen_getContractCode`, and `get_value()` readback. If it fails before validator assignment like the three attempts above, stop spending and classify the shared external blocker; do not submit Creditsplit again.
-6. Only if the diagnostic succeeds, deploy `contracts/Creditsplit.py` from the exact final `main` commit. Record the deployment transaction hash, contract address, source SHA-256, and final execution result.
-7. Read the deployed contract's initial accounting and project count. Do not reuse an address after a material source change.
-8. Set only `NEXT_PUBLIC_CONTRACT_ADDRESS` in the frontend's build environment. `frontend/lib/chain.ts` fixes the RPC and chain to StudioNet 61999 and uses the injected EIP-1193 provider.
-9. After every write, record the transaction hash, `FINALIZED` status, `txExecutionResultName`, and the resulting contract read. `FINALIZED` alone is not successful execution.
-10. For each settlement, inspect triggered transaction IDs and each external-message result, then verify recipient balance deltas. `EMITTED_UNVERIFIED` is deliberately not a payment receipt.
+## Reproducible gates
+
+1. Confirm `git status --short` is empty and the intended commit is on `main`.
+2. Confirm local versions: CLI `0.39.1`, SDK `1.1.8`, `genlayer-test==0.29.2`, `genvm-linter==0.11.0`, Node 22 and Python 3.12.
+3. Run offline tests, Direct Mode and semantic linter with `GENVM_VERSION=v0.2.16`.
+4. Select StudioNet and confirm chain ID `61999` and the RPC before signing.
+5. Deploy the diagnostic contract only when investigating routing; inspect validator assignment and registered source.
+6. Deploy Creditsplit only from the final committed source. A hash alone is not success: inspect finalization, execution result, source registration and initial reads.
+7. After every write, record hash, `FINALIZED` status, consensus result, leader execution result and state readback.
+8. For settlement, inspect every triggered child ID and its result, then verify beneficiary balances. `EMITTED_UNVERIFIED` is not a payment receipt.
+
+## New live lifecycle ledger
+
+All transactions below are on contract `0xaa14cb0B1f6c4868096Ef70dE131B93037B324fD`; explorer links use `https://explorer-studio.genlayer.com/tx/<hash>`.
+
+| Step | Transaction hash(es) | Verified result |
+| --- | --- | --- |
+| Sponsor create/fund | [`0x2c9ef5ab83848450bba21b712ca9e48fb6fcee8f9544fd5fc27edc8ac306b5e4`](https://explorer-studio.genlayer.com/tx/0x2c9ef5ab83848450bba21b712ca9e48fb6fcee8f9544fd5fc27edc8ac306b5e4) | `0.09 GEN`, value credited, project `1` |
+| Joins A/B/C | [`0x5e5810115618202b7c6a7ee85f90af132cffd507e8b840fc857f686ea35f0195`](https://explorer-studio.genlayer.com/tx/0x5e5810115618202b7c6a7ee85f90af132cffd507e8b840fc857f686ea35f0195), [`0xeb056152434f6e475917db51983a2da3593d21068d86ad793bc4acc5e096454a`](https://explorer-studio.genlayer.com/tx/0xeb056152434f6e475917db51983a2da3593d21068d86ad793bc4acc5e096454a), [`0x1ad3c2410e525c7c9f614893c24dd88a6e55bf2c79551a5ea527aed34c343d24`](https://explorer-studio.genlayer.com/tx/0x1ad3c2410e525c7c9f614893c24dd88a6e55bf2c79551a5ea527aed34c343d24) | All `FINALIZED / MAJORITY_AGREE / SUCCESS`; all joined |
+| Authored packets A/B/C | [`0xd50cfacb95b2fd26e859edf9695ee4573d2f29b0487d132c2779b92d11756a8f`](https://explorer-studio.genlayer.com/tx/0xd50cfacb95b2fd26e859edf9695ee4573d2f29b0487d132c2779b92d11756a8f), [`0xd3ed45621d6527efd1bf9c8cc881318471d5830820809ecfd449d3acd04b3e47`](https://explorer-studio.genlayer.com/tx/0xd3ed45621d6527efd1bf9c8cc881318471d5830820809ecfd449d3acd04b3e47), [`0xca607a81644f915652a729e4f892ae7f24ad7f10f9f6383763ab9c2de30d3d18`](https://explorer-studio.genlayer.com/tx/0xca607a81644f915652a729e4f892ae7f24ad7f10f9f6383763ab9c2de30d3d18) | Immutable texts stored; B references `0:1`; C references `0:1`, `1:1` |
+| Completion A/B/C | [`0xfa229cd13d53cfc6fa6700e94674d9bc1d1a8e7fae9e0781f13d554995c9cb62`](https://explorer-studio.genlayer.com/tx/0xfa229cd13d53cfc6fa6700e94674d9bc1d1a8e7fae9e0781f13d554995c9cb62), [`0xb0aa8a22ef6dd0c1606e12d2da974b50d25b690323eaa060fa0a194282bdbe20`](https://explorer-studio.genlayer.com/tx/0xb0aa8a22ef6dd0c1606e12d2da974b50d25b690323eaa060fa0a194282bdbe20), [`0xaf17527d17a0707cb6ee75a4f2f627056f48258aef12721d56e9cb2162ddcca3`](https://explorer-studio.genlayer.com/tx/0xaf17527d17a0707cb6ee75a4f2f627056f48258aef12721d56e9cb2162ddcca3) | Assembly opened |
+| Final artifact | [`0xea8020744ac733b8e7bbbbf6d7178348ae23ce4206377c77cad68735da188a8c`](https://explorer-studio.genlayer.com/tx/0xea8020744ac733b8e7bbbbf6d7178348ae23ce4206377c77cad68735da188a8c) | Final text stored with refs `0:1`, `1:1`, `2:1` |
+| Attribution responses A/B/C | [`0x5dadaea928574607afbcdec0fcdc1aab2ee72dc45efae2bf1406755c0287349e`](https://explorer-studio.genlayer.com/tx/0x5dadaea928574607afbcdec0fcdc1aab2ee72dc45efae2bf1406755c0287349e), [`0xdb32de9df2309dba8d636ef5e40bf213493551a7f95191c2766aeff6a013132b`](https://explorer-studio.genlayer.com/tx/0xdb32de9df2309dba8d636ef5e40bf213493551a7f95191c2766aeff6a013132b), [`0xc0d36549194ba2e2034b8ff266c554851cf39c49627dfc9fd5734d0250d8f5cb`](https://explorer-studio.genlayer.com/tx/0xc0d36549194ba2e2034b8ff266c554851cf39c49627dfc9fd5734d0250d8f5cb) | All acknowledged |
+| Freeze | [`0x9830aa726fa32209dba070a3a6328150b05e0c2c8a04bd459156db2267b4b80d`](https://explorer-studio.genlayer.com/tx/0x9830aa726fa32209dba070a3a6328150b05e0c2c8a04bd459156db2267b4b80d) | `FROZEN`; digest `8c8cc231d2525e7a9a2d7478f4594fa63d0d9bfe72f87d8f76615b544b483bf9` |
+| Evaluation | [`0x0acf5f25de45815dcdd39546b3c6ac7fe04ddf3b948bd6109359986168b25ce3`](https://explorer-studio.genlayer.com/tx/0x0acf5f25de45815dcddf3b948bd6109359986168b25ce3) | `FINALIZED / MAJORITY_AGREE / SUCCESS`; criteria `met/met/met`; weights `[5,3,1]`; amounts `0.05/0.03/0.01 GEN` |
+| Child transfers | [`0x2fd0309e631584037cf61fac7689489b8a67791ac3af5dfba060e0d4f42ac499`](https://explorer-studio.genlayer.com/tx/0x2fd0309e631584037cf61fac7689489b8a67791ac3af5dfba060e0d4f42ac499), [`0x493968bfcc746ff5ab9558961bf1d4cf2ccc89ff61f7cf828cc96313cdcc8812`](https://explorer-studio.genlayer.com/tx/0x493968bfcc746ff5ab9558961bf1d4cf2ccc89ff61f7cf828cc96313cdcc8812), [`0x2b119900f33263772d27c6b5f966b4f87964276327ec3b929f24f8cda5634a61`](https://explorer-studio.genlayer.com/tx/0x2b119900f33263772d27c6b5f966b4f87964276327ec3b929f24f8cda5634a61) | All `FINALIZED`; `value_credited=true`; child result `NO_MAJORITY`; balances are authoritative |
+| Beneficiary balances | RPC readback | A `0.11→0.16`, B `0.11→0.14`, C `0.11→0.12 GEN`; deltas exactly match `[0.05,0.03,0.01]` |
+| Final readback | `get_project(1)`, `get_accounting()`, `get_profile()` | Status `SETTLEMENT_EMITTED`, escrow `0`, dispatched `0.09 GEN`; profiles points `5/3/1` and earned amounts match |
+
+## Adversarial live case
+
+Project 2 was separately funded with `0.001 GEN`. The assembler submitted a forged final source reference `0:999` in [`0x9fb76a439b8544382155340eafdf998d43db3b58f47b0c6b0d5e47ccbd3d39a1`](https://explorer-studio.genlayer.com/tx/0x9fb76a439b8544382155340eafdf998d43db3b58f47b0c6b0d5e47ccbd3d39a1); it finalized with leader execution `ERROR`, and state remained `ASSEMBLY` with no final text. The assembler then submitted a valid but intentionally incomplete artifact. Evaluation [`0x3dbcf5c8c2d5d44b898cc0741e9a100a796f81f141237e1c4db00ddf3bcb9e24`](https://explorer-studio.genlayer.com/tx/0x3dbcf5c8c2d5d44b898cc0741e9a100a796f81f141237e1c4db00ddf3bcb9e24) finalized `MAJORITY_DISAGREE / ERROR`; no weights, refund, settlement or child transfer was created, and accounting correctly retained `1000000000000000` wei active escrow. A subsequent retry was not submitted because the RPC became unavailable before a transaction hash existed. This is an explicit unresolved/inconclusive project, not claimed as a refund.
 
 ## Vercel
 
-Use `frontend/` as the Vercel project root. Build with Node 22 and the committed `frontend/package-lock.json`. Configure only `NEXT_PUBLIC_CONTRACT_ADDRESS=0xB8d8Cc8384a0eaeFFC7998521E2a4fFD8deFC5C3`; no secret is required. A Vercel project was created and this environment value was set, but the connected Vercel account returned HTTP 403 when it attempted to look up the GitHub integration scope for `ometere123/creditsplit` (`team_zqLSqTEYuxYTP42pCCst09F3`). No public URL is claimed until that team/Git integration access is granted or an authorized direct-source deployment path is provided. The exact next command after access is restored is a production deploy from `frontend/`, followed by desktop/mobile wallet verification.
-
-## Required transaction ledger
-
-Record sponsor funding, each of the three joins, at least one packet per wallet, assembler publication or fallback, attribution responses, freeze, evaluation, every triggered external message, and the final readback. Also record recruitment refund, incomplete-deliverable refund, one adversarial attribution case and one unauthorized-call revert. Include explorer links and actual balance deltas; do not replace them with browser mocks.
-
-## Verified live ledger (synthetic packets)
-
-| Step | Transaction / evidence | Result |
-| --- | --- | --- |
-| Diagnostic deployment | [`0x5d1f38ef1599f26419046673a0df7794a8f15cd8c95970a7ae83fb530d6db3b7`](https://explorer-studio.genlayer.com/tx/0x5d1f38ef1599f26419046673a0df7794a8f15cd8c95970a7ae83fb530d6db3b7) | `FINALIZED`, `MAJORITY_AGREE`, contract `0xF357362A1c1D725bC57B1F04e1c227D5532F94E9`, `get_value() = 7` |
-| Creditsplit deployment | [`0x07d2c917d0c004836b8c8b20ce8501fb560cac1a3e4972c3157874e2c4c7ee28`](https://explorer-studio.genlayer.com/tx/0x07d2c917d0c004836b8c8b20ce8501fb560cac1a3e4972c3157874e2c4c7ee28) | `FINALIZED`, `MAJORITY_AGREE`, contract `0xB8d8Cc8384a0eaeFFC7998521E2a4fFD8deFC5C3`, source matched |
-| Sponsor funding | `0x12b7d26ba00401d5969efdc789d60ba09ce472dcbd688e6426d7e791f0b66634` | `0.03 GEN` escrow; project `1`; active escrow `30000000000000000` wei |
-| Joins | A `0x8153d2e836b1abd68977fa3ce7883b530fe9c167e8df4d6f471dea794ec8867`; B `0x1f1b01e1636a2b3d3909d409ff50ca11087f523f0f2aca3cc31dc078b2d138f5`; C hash unavailable after RPC HTML error | State readback proves `joined=[true,true,true]`; C's hash is intentionally not claimed |
-| Contributions and completion | A submit `0xb3b23b65084c029fb36e03bbbe5edecebf2f02307a6c8e7bb41e2379b3a8bb8b`, finish `0x914c44713b9702f6cfdfd9bafb2d6cfa209cf5667921618033caf8873e91d187`; B submit `0x8cfb7373e7f5aae2d3c76c446c02ec73c6ab4a3699a3de57c616b842bd1edcd7`, finish `0x157feeb5a9b48fdc975f4c50b4b9e8bbf808a59627455d55bc82006c7d58b351`; C submit `0xbff3934606ac0b886368975ed3abed8b2ef9391cfb16c6843b695aa5e4e6db0c`, finish `0x8112200558868ff11b6d8fc55f1b1ef3f028979cfa75a38d047ad932648da2f3` | All finalized `MAJORITY_AGREE`; project entered `ASSEMBLY` |
-| Final artifact | [`0x4e55f2fb5e66c87ee04d060ec9ee55ec9569094678140d4df4f8c56259fe107f`](https://explorer-studio.genlayer.com/tx/0x4e55f2fb5e66c87ee04d060ec9ee55ec9569094678140d4df4f8c56259fe107f) | Final text stored with refs `0:1`, `1:1`, `2:1` |
-| Attribution responses | A [`0x15d17e224e81f9ed5a90cbdfffb65c910550034be248bb28e3a63c16d3700067`](https://explorer-studio.genlayer.com/tx/0x15d17e224e81f9ed5a90cbdfffb65c910550034be248bb28e3a63c16d3700067); B [`0xa8d14e89973d1656d0d3780525ece3abbf8452be26d23413a00c5fa18e1f78c1`](https://explorer-studio.genlayer.com/tx/0xa8d14e89973d1656d0d3780525ece3abbf8452be26d23413a00c5fa18e1f78c1); C [`0x0fdb2246bde57e67d0eb464bb873c93c41158159112d7f2cbaae538a42f16483`](https://explorer-studio.genlayer.com/tx/0x0fdb2246bde57e67d0eb464bb873c93c41158159112d7f2cbaae538a42f16483) | All finalized; evidence digest `a7fb6eb6a51280b52f74e31e12fd58e68f8de46b7ad82e6b65c0405ef4cd34a6` |
-| Freeze | [`0x16b6b1d7b94d050c025699a906a1d9d9cf0ff8aaab80987f95c341365fce86bf`](https://explorer-studio.genlayer.com/tx/0x16b6b1d7b94d050c025699a906a1d9d9cf0ff8aaab80987f95c341365fce86bf) | `FROZEN`, canonical digest stored |
-| Evaluation | [`0x2eea902eb1dda9a68a781a334d70082587740d739098ccbc5104364d642e67f7`](https://explorer-studio.genlayer.com/tx/0x2eea902eb1dda9a68a781a334d70082587740d739098ccbc5104364d642e67f7) | `FINALIZED`, `MAJORITY_AGREE`; weights `[3,3,3]`, amounts `0.01 GEN` each |
-| External child messages | `0x7707c1c5fffaae735ed2116e4137a66bece36f34942215e702db49fc0b3eef1d`, `0x1efb955909a25592d92c6ad1524d2d3c7b7f285d174cbacb2d4fb62d3cdcdfe7`, `0x689f40de056cb28232213d2c3a4b30b13426015d762d9712a78bedaab7520f42` | Each finalized with EVM receipt `0x1`; each child result was `NO_MAJORITY`, so balance proof is required |
-| Beneficiary balances | RPC before: `0.1 GEN` each; after: `0.11 GEN` each | Actual delta `+0.01 GEN` for all three recipients; contract state remains `EMITTED_UNVERIFIED` by design |
-| Negative replay | [`0x23a73156d18bd41fd036e8e42336dab171ef5494d9fcec474b6eea1da75bd55b`](https://explorer-studio.genlayer.com/tx/0x23a73156d18bd41fd036e8e42336dab171ef5494d9fcec474b6eea1da75bd55b) | Finalized consensus, but leader execution `ERROR` with `frozen evidence required`; no child messages and no state change |
-
-Recruitment-refund and incomplete-deliverable-refund live receipts are not claimed: their 48-hour/24-hour deadlines are wall-clock enforced on StudioNet. The local Direct Mode suite covers both branches. Vercel deployment and browser-wallet integration against this address are also tracked separately.
+The existing Vercel project uses `frontend/` as its root and only requires `NEXT_PUBLIC_CONTRACT_ADDRESS=0xaa14cb0B1f6c4868096Ef70dE131B93037B324fD`. Production deployment is not claimed: the connected team `team_zqLSqTEYuxYTP42pCCst09F3` previously returned HTTP 403 while resolving the GitHub integration scope. Once that authorization is granted, deploy the existing project or use an authorized direct-source deployment; do not create a replacement project and do not place wallet secrets in frontend configuration.

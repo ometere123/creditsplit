@@ -9,11 +9,12 @@ StudioNet 61999 RPC https://studio.genlayer.com/api
       │
 Creditsplit Python Intelligent Contract (one deployment)
       ├─ Sponsor-payable escrow + invitation-only membership
-      ├─ Two bounded, append-only submissions per slot
+      ├─ Two bounded, append-only authored submissions per slot + registered build-on refs
+      ├─ Three immutable project-specific acceptance criteria
       ├─ Single assembler output or deterministic deadline fallback
       ├─ Signed responses, acknowledgment deadline, frozen evidence SHA-256
       ├─ GenVM run_nondet_unsafe leader + independently rerun validators
-      ├─ Immutable accepted 0/1/3/5 bands + completion decision
+      ├─ Validator-agreed materiality classifications → deterministic 0/1/3/5 bands
       ├─ Deterministic wei allocation + on-finalization EOA GEN messages
       └─ Public project list, full history, reputation + accounting views
 ```
@@ -28,7 +29,7 @@ The final states refer to emitted external messages, **not verified recipient pa
 
 ## Read/write interface
 
-Writes: `create_project(title,brief,a,b,c,assembler_slot)` payable, `join_project(id)`, `submit_contribution(id,content)`, `finish_contributing(id)`, `submit_final_artifact(id,text,source_refs_json)`, `respond_attribution(id,response)`, `advance_project(id)`, `freeze_project(id)`, `evaluate_contributions(id)`, `refund_unstarted_project(id)`.
+Writes: `create_project(title,brief,a,b,c,assembler_slot)` payable, `create_project_with_criteria(title,brief,criteria_json,a,b,c,assembler_slot)` payable, `join_project(id)`, `submit_contribution(id,content)`, `submit_contribution_with_references(id,content,references_json)`, `finish_contributing(id)`, `submit_final_artifact(id,text,source_refs_json)`, `respond_attribution(id,response)`, `advance_project(id)`, `freeze_project(id)`, `evaluate_contributions(id)`, `refund_unstarted_project(id)`.
 
 Views: `get_project(id)`, `get_project_count()`, `list_projects(start,count≤20)`, `get_profile(wallet)`, `get_accounting()`.
 
@@ -36,4 +37,4 @@ Views return UTF-8 JSON strings for ABI simplicity. `list_projects` returns boun
 
 ## Trust boundaries
 
-The contract alone controls state, eligibility, evidence freeze, transfer amounts, and accounting. Browser state controls **nothing authoritative**. The leader's narrative is not binding; only `complete` and `weights` govern settlement and are checked against an independent validator execution. Prompts never fetch mutable external sources. Each wallet acts as its own authenticated on-chain principal; no identity/originality outside signed submissions is claimed.
+The contract alone controls state, eligibility, evidence freeze, transfer amounts, and accounting. Browser state controls **nothing authoritative**. The leader's narrative is not binding; validators independently reassess the same actual passages and frozen criteria. Only agreed payment-controlling classifications and contract-derived weights govern settlement. Prompts never fetch mutable external sources. Each wallet acts as its own authenticated on-chain principal; no identity/originality outside signed submissions is claimed.
