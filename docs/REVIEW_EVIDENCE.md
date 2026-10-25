@@ -5,7 +5,8 @@ This ledger separates source/test evidence from live StudioNet evidence. It does
 ## Source and implementation
 
 - Contract implementation commit before deployment: [`18042d55d1de610b9f87d914a0bef3bfd8c7545f`](https://github.com/ometere123/creditsplit/commit/18042d55d1de610b9f87d914a0bef3bfd8c7545f).
-- Current final release commit is the later `main` commit recorded by GitHub after the frontend receipt fix and documentation closeout; the contract file is unchanged after `18042d55`.
+- Release commit containing the frontend receipt fix, Node 22 pin and documentation closeout: [`48209010b867594d4d56fef6e8d3d30e2dd05195`](https://github.com/ometere123/creditsplit/commit/48209010b867594d4d56fef6e8d3d30e2dd05195). The contract file is unchanged after `18042d55`.
+- GitHub Actions run for that exact release commit: [`40195814452`](https://github.com/ometere123/creditsplit/actions/runs/40195814452), completed successfully.
 - Contract source SHA-256: `0AA8AACDDF5E65B72B60BFFC057F8393B46B586B7B60185C815CD1D50DDDCCAF`.
 - The corrected source removes assembler citation as an economic veto, stores exact packet anchors and registration sequence, caps later exact duplicates at band `1`, and separates informational merit from incomplete-project settlement.
 - Combined Python suite: `54 passed`; GenVM semantic lint: `17 methods`, `5 views`, `12 writes`; frontend: `15` Vitest tests, strict TypeScript, production build and `2` desktop/mobile Playwright smoke projects passed locally.
@@ -58,7 +59,7 @@ The former contract, former `[5,3,1]` lifecycle and historical unresolved projec
 
 - GenLayer Fit: strong evidence that independent nondeterministic consensus controls economically consequential attribution; no centralized adjudicator exists.
 - Contract Quality: targeted fixes are implemented and live-tested; external EOA delivery remains callbackless and disagreement can remain fail-closed.
-- Engineering: reproducible pinned tests, lint, source-matched deployment and live readbacks are evidenced; final CI URL is recorded after the release commit completes.
+- Engineering: reproducible pinned tests, lint, source-matched deployment, live readbacks and the successful exact-SHA CI run above are evidenced.
 - Frontend/UX: connected read/write paths and receipt recovery are implemented and built; automated connected-wallet browser QA remains a separately stated limitation.
 
 Reviewers should inspect the source, final CI run, deployment receipt, project readbacks, parent/child records and recipient balances directly. This ledger does not award portal scores.

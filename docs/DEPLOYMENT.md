@@ -4,7 +4,7 @@ This runbook uses only StudioNet chain `61999`, RPC `https://studio.genlayer.com
 
 ## Current verified deployment
 
-The corrected contract implementation was committed on `main` at [`18042d55d1de610b9f87d914a0bef3bfd8c7545f`](https://github.com/ometere123/creditsplit/commit/18042d55d1de610b9f87d914a0bef3bfd8c7545f) before deployment. The final frontend receipt-compatibility fix and release documentation are committed after that source deployment; the contract file itself is unchanged, so its source hash remains source-matched.
+The corrected contract implementation was committed on `main` at [`18042d55d1de610b9f87d914a0bef3bfd8c7545f`](https://github.com/ometere123/creditsplit/commit/18042d55d1de610b9f87d914a0bef3bfd8c7545f) before deployment. Release commit [`48209010b867594d4d56fef6e8d3d30e2dd05195`](https://github.com/ometere123/creditsplit/commit/48209010b867594d4d56fef6e8d3d30e2dd05195) contains the frontend receipt-compatibility fix, Node 22 pin and evidence documentation; the contract file itself is unchanged, so its source hash remains source-matched.
 
 Deployment command:
 
