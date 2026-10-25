@@ -19,7 +19,7 @@ Results are evidence records, not self-assigned portal scores. Current-contract 
 | Runtime dependency audit | root npm audit --omit=dev --audit-level=high and frontend npm audit --audit-level=high | No high-severity runtime/frontend findings; root CLI development-tree advisories are tracked separately |
 | Secret scan | CI tracked-source scan excluding lockfiles | Clean |
 
-The latest completed source CI before this documentation reconciliation was [run 40201586105](https://github.com/ometere123/creditsplit/actions/runs/40201586105) on commit 5e4c3b1. The final documentation commit must have its own successful run recorded here before release closeout.
+The source-release verification is [run 40213726715](https://github.com/ometere123/creditsplit/actions/runs/40213726715) on commit e6e435b. The final closeout commit is documentation-only; its exact workflow result is reported with the final main SHA.
 
 ## Current live contract evidence
 

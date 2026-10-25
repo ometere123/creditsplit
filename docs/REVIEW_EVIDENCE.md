@@ -6,13 +6,13 @@ This ledger separates the authoritative current release from historical deployme
 
 | Item | Evidence |
 | --- | --- |
-| Main commit | [`5e4c3b197130a3ffd81e9a1b203624291424ea6b`](https://github.com/ometere123/creditsplit/commit/5e4c3b197130a3ffd81e9a1b203624291424ea6b) |
+| Source-release commit | [`e6e435b50d3292bd34e918f9e0254910f32377b3`](https://github.com/ometere123/creditsplit/commit/e6e435b50d3292bd34e918f9e0254910f32377b3) |
 | Contract source SHA-256 | `794231E47E0EF7873E6F14A4BBC9FC7B0D1CAF94A2C9BBDE9DBFD85A52612818` |
 | Current contract | [`0x03EEC54406D220ce484002A1A493d73D09b7F57C`](https://explorer-studio.genlayer.com/address/0x03EEC54406D220ce484002A1A493d73D09b7F57C) |
 | Deployment | [`0x64f7f36cbc2eb8349e6e68850cc00bf839fecb7251c05941b1b67a62d95d405f`](https://explorer-studio.genlayer.com/tx/0x64f7f36cbc2eb8349e6e68850cc00bf839fecb7251c05941b1b67a62d95d405f), FINALIZED / MAJORITY_AGREE / SUCCESS |
 | Network | StudioNet chain `61999`, `https://studio.genlayer.com/api` |
 | Production | [`https://creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app) |
-| Exact-SHA CI | [run 40201586105](https://github.com/ometere123/creditsplit/actions/runs/40201586105), successful at the exact main commit |
+| Exact-SHA source-release CI | [run 40213726715](https://github.com/ometere123/creditsplit/actions/runs/40213726715), successful at the exact source-release commit |
 
 The contract source last changed at `3a745ab95795634769e9bd02993e58a52c10a71d`; the final main commit is a documentation/production-link closeout after that source-matched deployment. gen_getContractCode returned 32,875 bytes with the exact source hash above, and the registered schema reports 17 methods (5 views, 12 writes).
 

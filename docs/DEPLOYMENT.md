@@ -4,7 +4,7 @@ This ledger is the authoritative deployment record for Creditsplit. It uses only
 
 ## Authoritative current release
 
-The current contract source last changed in [`3a745ab95795634769e9bd02993e58a52c10a71d`](https://github.com/ometere123/creditsplit/commit/3a745ab95795634769e9bd02993e58a52c10a71d). The current release branch is `main` at commit [`5e4c3b197130a3ffd81e9a1b203624291424ea6b`](https://github.com/ometere123/creditsplit/commit/5e4c3b197130a3ffd81e9a1b203624291424ea6b); later commits are documentation and production-link updates and do not alter `contracts/Creditsplit.py`.
+The current contract source last changed in [`3a745ab95795634769e9bd02993e58a52c10a71d`](https://github.com/ometere123/creditsplit/commit/3a745ab95795634769e9bd02993e58a52c10a71d). The source release was recorded at [`e6e435b50d3292bd34e918f9e0254910f32377b3`](https://github.com/ometere123/creditsplit/commit/e6e435b50d3292bd34e918f9e0254910f32377b3); subsequent closeout commits are documentation-only and do not alter `contracts/Creditsplit.py`.
 
 | Item | Verified value |
 | --- | --- |
@@ -16,7 +16,7 @@ The current contract source last changed in [`3a745ab95795634769e9bd02993e58a52c
 | Registered source | `gen_getContractCode` decoded to exactly that SHA-256; 32,875 bytes |
 | Initial readback | `get_project_count() = 0`; accounting had zero active escrow and zero dispatched GEN |
 | Current Vercel alias | [`https://creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app) |
-| Current CI | [GitHub Actions run 40201586105](https://github.com/ometere123/creditsplit/actions/runs/40201586105), successful on the exact release commit above |
+| Source-release CI | [GitHub Actions run 40213726715](https://github.com/ometere123/creditsplit/actions/runs/40213726715), successful on the exact source-release commit above |
 
 Deployment command used for the current contract:
 
