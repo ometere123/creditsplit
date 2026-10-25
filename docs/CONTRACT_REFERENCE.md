@@ -19,6 +19,8 @@
 | `evaluate_contributions(id)` | Runs the leader and independent validators over the frozen evidence. Only validator-agreed payment classifications can settle. |
 | `refund_unstarted_project(id)` | Permissionless full refund after recruitment expiry if all three wallets did not join. |
 
+`create_project` is retained for compatibility and supplies generic default criteria. It is not a separate escrow or settlement implementation: it reaches the same authenticated, frozen-evidence, validator-agreement and deterministic accounting path as `create_project_with_criteria`. The frontend uses the custom-criteria method so each sponsor can define the three requirements explicitly.
+
 ## Assessment and settlement rules
 
 Each assessment contains `relevance`, `distinct`, `correctness`, `material_effect`, `attribution_consistent`, `evidence_ids`, exact bounded `evidence_anchors`, and a bounded justification. Positive work must cite the contributor's own packet. Anchors must be exact normalized packet excerpts, match on token boundaries, and contain identifiable content; isolated articles/stopwords such as `The` are rejected, while concise technical corrections remain eligible. The contract derives bands `0/1/3/5`; model-provided weights, amounts and recipients are ignored.

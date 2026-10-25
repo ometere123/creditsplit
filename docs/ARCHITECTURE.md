@@ -19,6 +19,8 @@ Creditsplit Python Intelligent Contract (one deployment)
       └─ Public project list, full history, reputation + accounting views
 ```
 
+The authoritative current deployment is `0x03EEC54406D220ce484002A1A493d73D09b7F57C` on StudioNet `61999`, source SHA-256 `794231E47E0EF7873E6F14A4BBC9FC7B0D1CAF94A2C9BBDE9DBFD85A52612818`. Earlier addresses and their lifecycles are historical evidence only; they are not interchangeable with the current frontend target.
+
 ## States
 
 `RECRUITING → ACTIVE → ASSEMBLY → REVIEW → FROZEN → SETTLEMENT_EMITTED | REFUND_EMITTED`
@@ -33,7 +35,7 @@ Writes: `create_project(title,brief,a,b,c,assembler_slot)` payable, `create_proj
 
 Views: `get_project(id)`, `get_project_count()`, `list_projects(start,count≤20)`, `get_profile(wallet)`, `get_accounting()`.
 
-Views return UTF-8 JSON strings for ABI simplicity. `list_projects` returns bounded summaries; `get_project` returns public detailed evidence, including informational merit separately from settlement weights.
+Views return UTF-8 JSON strings for ABI simplicity. `list_projects` returns bounded summaries; `get_project` returns public detailed evidence, including informational merit separately from settlement weights. `create_project` remains a backward-compatible generic-criteria path; it shares the same authorization, escrow, freeze, consensus and settlement safeguards as `create_project_with_criteria`, while the latter is preferred for project-specific requirements.
 
 ## Trust boundaries
 

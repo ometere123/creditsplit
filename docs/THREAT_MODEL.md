@@ -19,7 +19,7 @@ Sponsor manipulating final assembly; invited contributor copying prior submissio
 7. Evidence anchors must be exact bounded, content-bearing excerpts from registered packet text; token-boundary matching rejects trivial anchors while allowing concise technical corrections. Exact later cross-slot copies are capped per cited packet by registration sequence; a separate original packet is not suppressed, and paraphrases remain semantic validator decisions.
 8. Incomplete delivery separates informational merit from settlement: any unmet criterion forces settlement weights to zero and refunds the sponsor. A failed consensus leaves frozen evidence and escrow unchanged.
 9. `EMITTED_UNVERIFIED` transfer label makes the lack of delivery callback explicit. Inspect child messages and actual wallet balances.
-10. The live corrected release exercised an assembler omission, a failed incomplete evaluation, a same-evidence retry, a refund child and an unauthorized/invalid-reference path. The contract finalized the invalid calls with execution errors without corrupting project state.
+10. The current hardened release has a live successful three-wallet lifecycle with an accepted [5,3,3] decision, exact child sends and beneficiary balance proof. The assembler-omission, failed incomplete evaluation, same-evidence retry and refund-child evidence belong to the historical `0x49...` deployment and are labeled that way in the deployment ledger. Current negative browser evidence includes a duplicate response that finalized with execution `ERROR` and changed no state.
 
 ## Known limits, not hidden assumptions
 
