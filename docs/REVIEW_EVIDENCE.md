@@ -49,7 +49,7 @@ This demonstrates fail-closed disagreement, unchanged frozen evidence, safe late
 - Current Ready deployment inspect page: [`GhwmKjhwjDXyxcEogi4c2Ls6Sg8h`](https://vercel.com/delealufejoel-4184s-projects/creditsplit/GhwmKjhwjDXyxcEogi4c2Ls6Sg8h). The build used Node `22.x`.
 - `NEXT_PUBLIC_CONTRACT_ADDRESS` was updated to the current address and the public URL returned HTTP `200` with discovery and wallet controls.
 - The local frontend now recognizes the pinned SDK's simplified StudioNet success receipt, scopes pending transaction recovery by chain/wallet/contract/method/hash, clears permanently failed finalized transactions and refreshes on account/network changes.
-- Connected MetaMask end-to-end QA was not claimed by the automated smoke suite; the Playwright evidence is desktop/mobile navigation and form coverage. Manual wallet QA should still be performed by the reviewer with funded disposable wallets.
+- Connected-wallet QA was performed in the Convert Chrome profile with the injected Rabby EIP-1193 wallet: wallet connection and StudioNet `61999` status, live project discovery, project detail, frozen evidence, consensus classifications and anchors, reward allocations, honest `EMITTED_UNVERIFIED` transfer labeling, connected profile readback and creation-form state were verified. No new financial signature was requested during browser QA because the SDK lifecycle ledger already contains the necessary funded writes. Playwright remains desktop/mobile navigation and form smoke coverage, not a replacement for wallet signing evidence.
 
 ## Prior evidence
 

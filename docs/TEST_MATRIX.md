@@ -22,5 +22,6 @@ Results are evidence records, not self-assigned portal scores.
 | Current live incomplete/refund | StudioNet SDK writes + RPC reads | Project 1: incomplete criteria, first disagreement fail-closed, retry with unchanged digest, zero settlement weights, full sponsor refund child credited |
 | Current live negative paths | StudioNet writes | Invalid unregistered packet references rolled back; no malformed packet entered state |
 | Vercel production | Authorized direct-source deployment from repo root | Ready current alias [`creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app); HTTP `200`; Root Directory remains `frontend` |
+| Connected wallet QA | Convert Chrome profile + injected Rabby EIP-1193 wallet | Wallet connected on StudioNet `61999`; live project list/detail, evidence, consensus, rewards, profile and creation-form state inspected; no redundant financial signature broadcast |
 
 Direct Mode exercises validator callbacks and contract transitions but cannot prove production consensus or beneficiary balances. The live ledger proves those observations for the current source-matched deployment. Automated browser tests do not claim connected MetaMask QA; wallet QA remains a manual reviewer gate.
