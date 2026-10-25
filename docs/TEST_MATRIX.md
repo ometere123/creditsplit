@@ -19,7 +19,7 @@ The following results were run from the source tree. Live rows are evidence reco
 | Initial readback | `get_project_count()`, `get_accounting()` | `0`; `{active_escrow_wei:"0", project_count:0, total_dispatched_wei:"0"}` |
 | Completed live lifecycle | StudioNet SDK writes + RPC reads | Project 1: three joins, three authored packets, references, assembly, three responses, freeze, evaluation `MAJORITY_AGREE`, weights `[5,3,1]`, amounts `0.05/0.03/0.01 GEN`; child transfers credited all recipients |
 | Live adversarial case | Separate StudioNet project 2 | Forged final source reference `0:999` finalized with execution `ERROR`; valid incomplete artifact froze; evaluation reached `MAJORITY_DISAGREE / ERROR` without settlement or child transfers; escrow remained reserved |
-| Vercel production | Actual public URL | Not verified. Existing team/GitHub integration remains blocked by HTTP 403; no URL is claimed |
+| Vercel production | CLI direct-source deployment from repository root | Ready: [`creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app); HTTP `200`; project Root Directory remains `frontend` |
 
 Direct Mode exercises validator callbacks and contract transitions, but cannot prove production consensus or beneficiary balances. The live ledger proves those observations for the new source-matched deployment. The live packets are authored test passages submitted directly by disposable wallets; no external documents or contribution sources were fetched.
 

@@ -60,4 +60,11 @@ Project 2 was separately funded with `0.001 GEN`. The assembler submitted a forg
 
 ## Vercel
 
-The existing Vercel project uses `frontend/` as its root and only requires `NEXT_PUBLIC_CONTRACT_ADDRESS=0xaa14cb0B1f6c4868096Ef70dE131B93037B324fD`. Production deployment is not claimed: the connected team `team_zqLSqTEYuxYTP42pCCst09F3` previously returned HTTP 403 while resolving the GitHub integration scope. Once that authorization is granted, deploy the existing project or use an authorized direct-source deployment; do not create a replacement project and do not place wallet secrets in frontend configuration.
+The existing Vercel project `creditsplit` uses `frontend/` as its Root Directory and only requires `NEXT_PUBLIC_CONTRACT_ADDRESS=0xaa14cb0B1f6c4868096Ef70dE131B93037B324fD`. After CLI team authorization, a direct-source production deployment from the repository root completed successfully:
+
+- Public alias: [`https://creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app)
+- Deployment: [`https://creditsplit-og7bgeciw-delealufejoel-4184s-projects.vercel.app`](https://creditsplit-og7bgeciw-delealufejoel-4184s-projects.vercel.app)
+- Inspect: [`https://vercel.com/delealufejoel-4184s-projects/creditsplit/GZxWnBHVfvt61E5oqL5ENb5gWGSQ`](https://vercel.com/delealufejoel-4184s-projects/creditsplit/GZxWnBHVfvt61E5oqL5ENb5gWGSQ)
+- Status: `Ready`; public HTTP check returned `200` and the page rendered Creditsplit discovery and wallet controls.
+
+The GitHub integration is not connected; this was an authorized direct-source deployment of the existing project. No wallet secret or server signer is in the frontend or Vercel environment.

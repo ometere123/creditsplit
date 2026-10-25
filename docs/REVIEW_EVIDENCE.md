@@ -49,7 +49,7 @@ Attempts [A](https://explorer-studio.genlayer.com/tx/0x5871890bcccbcb55d1b3980f2
 ## Incomplete external gates
 
 - Live recruitment-expiry and incomplete-deliverable refund receipts were not claimed; StudioNet deadlines are wall-clock enforced and the adversarial project intentionally remains frozen after an inconclusive judgment.
-- No Vercel public URL is claimed. The existing team `team_zqLSqTEYuxYTP42pCCst09F3` previously returned HTTP 403 for the GitHub integration scope. Deployment requires that authorization or an authorized direct-source path.
-- No GitHub Actions URL is claimed for the final implementation commit until the remote workflow completes; local checks above are the evidence currently available.
+- Vercel GitHub auto-deployment remains unconnected, but the authorized direct-source deployment is verified at [`creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app); its deployment is `Ready` and the public HTTP check returned `200`.
+- GitHub Actions for the final release commit is green: [run 40110536120](https://github.com/ometere123/creditsplit/actions/runs/40110536120), with successful `contract-offline` and `frontend` jobs.
 
 Reviewers should inspect the source, tests, deployment receipt, project readbacks, child transaction records and recipient balances directly. The evidence supports a real source-matched deployment and an evidence-based live judgment; it does not justify automatic 5/5/5/5 scores.
