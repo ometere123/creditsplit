@@ -34,13 +34,16 @@ Use exactly these bounded values:
 - distinct, correctness, attribution_consistent: true or false
 - material_effect: "foundational", "substantial", "supporting" or "none"
 - evidence_ids: zero or more registered packet IDs, at most four per slot
-- evidence_anchors: one exact short packet-text excerpt for each evidence ID,
+- evidence_anchors: one exact, substantive short packet-text excerpt for each evidence ID,
   in the same order; at most 140 UTF-8 bytes each
 - justification: at most 400 UTF-8 bytes
 
 Every positive assessment must cite the contributor's own registered packet and
-quote an exact bounded excerpt from every cited packet. An authentic packet ID
-alone is not proof that the cited passage is relevant. The assembler's source
+quote an exact, substantive bounded excerpt from every cited packet. Do not use
+articles, isolated stopwords or other trivial anchors that provide no meaningful
+support. An authentic packet ID alone is not proof that the cited passage is
+relevant, and every cited packet must materially support the classification; do
+not cite an irrelevant clean packet to conceal copied work. The assembler's source
 reference list is an attribution claim that validators inspect; it is not an
 economic veto over a packet that the independent assessment finds materially
 valuable. If the final deliverable fails a criterion, retain honest contribution
@@ -90,8 +93,51 @@ def _packet_sequence(packet, fallback: int) -> int:
     return sequence if sequence > 0 else fallback
 
 
-def _has_prior_exact_duplicate(project, slot: int) -> bool:
-    """Return true when this slot contains an exact packet copied from an earlier slot.
+_TRIVIAL_ANCHORS = {
+    "a", "an", "and", "as", "at", "by", "for", "from", "in", "is", "it",
+    "of", "on", "or", "the", "to", "this", "that", "with"
+}
+
+
+def _anchor_is_informative(value: str) -> bool:
+    """Accept an identifiable lexical anchor without imposing a word-count rule."""
+    normalized = _normalize_packet_text(value)
+    if not normalized or normalized in _TRIVIAL_ANCHORS:
+        return False
+    tokens = []
+    for piece in normalized.split():
+        token = "".join(character for character in piece if character.isalnum())
+        if token:
+            tokens.append(token)
+    if len(tokens) >= 2 and any(len(token) >= 4 for token in tokens):
+        return True
+    if len(tokens) == 1 and len(tokens[0]) >= 8:
+        return True
+    if (any(symbol in normalized for symbol in (":", "=", "<", ">", "+", "-", "/")) and
+            sum(len(token) for token in tokens) >= 3):
+        return True
+    return False
+
+
+def _contains_normalized_anchor(packet_text: str, anchor: str) -> bool:
+    """Match an exact normalized excerpt without matching inside a word."""
+    text = _normalize_packet_text(packet_text)
+    excerpt = _normalize_packet_text(anchor)
+    if not text or not excerpt:
+        return False
+    offset = text.find(excerpt)
+    while offset >= 0:
+        before = text[offset - 1] if offset > 0 else ""
+        end = offset + len(excerpt)
+        after = text[end] if end < len(text) else ""
+        if (not before or not before.isalnum()) and (not after or not after.isalnum()):
+            return True
+        offset = text.find(excerpt, offset + 1)
+    return False
+
+
+def _has_prior_exact_duplicate(project, packet_id: str) -> bool:
+    """Return true only when this cited packet copied an earlier other-slot packet.
 
     Packet sequence is assigned by the contract at registration time. The slot
     tie-breaker is only a compatibility fallback for legacy records without a
@@ -103,17 +149,22 @@ def _has_prior_exact_duplicate(project, slot: int) -> bool:
         for packet in project["packets"][packet_group_slot]:
             fallback += 1
             ordered.append((packet_group_slot, packet, _packet_sequence(packet, fallback)))
-    for current_slot, current, current_sequence in ordered:
-        if current_slot != slot:
-            continue
-        current_text = _normalize_packet_text(current["text"])
-        if not current_text:
-            continue
-        for other_slot, other, other_sequence in ordered:
-            if (other_slot != slot and _normalize_packet_text(other["text"]) == current_text and
-                    (other_sequence, other_slot, str(other["id"])) <
-                    (current_sequence, current_slot, str(current["id"]))):
-                return True
+    current_record = None
+    for slot, packet, sequence in ordered:
+        if packet.get("id") == packet_id:
+            current_record = (slot, packet, sequence)
+            break
+    if current_record is None:
+        return False
+    current_slot, current, current_sequence = current_record
+    current_text = _normalize_packet_text(current["text"])
+    if not current_text:
+        return False
+    for other_slot, other, other_sequence in ordered:
+        if (other_slot != current_slot and _normalize_packet_text(other["text"]) == current_text and
+                (other_sequence, other_slot, str(other["id"])) <
+                (current_sequence, current_slot, str(current["id"]))):
+            return True
     return False
 
 
@@ -130,9 +181,12 @@ def _assessment_weight(assessment, project, slot: int) -> int:
         weight = 5
     else:
         return 0
-    # Exact later copies cannot earn substantial or foundational credit. The
-    # original registered slot remains assessable and settlement can proceed.
-    return 1 if _has_prior_exact_duplicate(project, slot) else weight
+    # Exact later copies cannot earn substantial or foundational credit when
+    # that specific packet is part of the supporting evidence. A contributor's
+    # unrelated original packet remains independently assessable.
+    if any(_has_prior_exact_duplicate(project, packet_id) for packet_id in assessment["evidence_ids"]):
+        return 1
+    return weight
 
 
 def _decision_weights(result, project):
@@ -190,7 +244,8 @@ def _valid_decision(result, project) -> bool:
             anchor = anchors[index]
             if (not isinstance(anchor, str) or not anchor or
                     len(anchor.encode("utf-8")) > 140 or
-                    _normalize_packet_text(anchor) not in _normalize_packet_text(known[ref]["text"])):
+                    not _anchor_is_informative(anchor) or
+                    not _contains_normalized_anchor(known[ref]["text"], anchor)):
                 return False
         weight = _assessment_weight(assessment, project, slot)
         weights.append(weight)

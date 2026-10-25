@@ -4,13 +4,13 @@ Results are evidence records, not self-assigned portal scores.
 
 | Area | Command or evidence | Result |
 | --- | --- | --- |
-| Offline contract harness | `py -3.12 -m pytest -q tests/test_contract_offline.py` | `39` passed locally, including omitted assembler refs, incomplete completion, exact-copy ordering, anchors, forged decisions, refunds, replay and escrow isolation |
-| Actual GenLayer Direct Mode | `py -3.12 -m pytest -q tests/direct/` | `15` passed locally against `genlayer-test==0.29.2` and pinned `v0.2.16` |
-| Combined Python suite | `py -3.12 -m pytest -q tests/test_contract_offline.py tests/direct/` | `54 passed` |
+| Offline contract harness | `py -3.12 -m pytest -q tests/test_contract_offline.py` | `42` passed locally, including omitted assembler refs, incomplete completion, packet-specific exact-copy ordering, clean-reference concealment, informative anchors, forged decisions, refunds, replay and escrow isolation |
+| Actual GenLayer Direct Mode | `py -3.12 -m pytest -q tests/direct/` | `18` passed locally against `genlayer-test==0.29.2` and pinned `v0.2.16` |
+| Combined Python suite | `py -3.12 -m pytest -q tests/test_contract_offline.py tests/direct/` | `60 passed` |
 | AST + semantic GenVM lint | `$env:GENVM_VERSION='v0.2.16'; genvm-lint check contracts/Creditsplit.py --json` | Passed: `17 methods`, `5 views`, `12 writes` |
 | Python syntax | `py -3.12 -m compileall -q contracts` | Passed |
 | Frontend install | `npm ci` in root and `frontend/` | Passed; lockfiles committed |
-| Strict TypeScript | `npm run typecheck` in `frontend/` | Passed after SDK receipt fallback fix |
+| Strict TypeScript | `npm run typecheck` in `frontend/` | Passed |
 | Frontend unit tests | `npm test` in `frontend/` | `15 passed`, including finalized simplified success and disagreement receipt cases |
 | Production build | `npm run build` in `frontend/` | Passed |
 | Browser smoke | `npm run test:e2e` in `frontend/` | `2 passed`: desktop and mobile navigation/form smoke |

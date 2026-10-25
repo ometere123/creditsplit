@@ -9,7 +9,12 @@ import pytest
 from datetime import datetime, timezone
 
 CONTRACT = "contracts/Creditsplit.py"
-ANCHORS = {'0:1': 'The', '1:1': 'Correction', '2:1': 'The'}
+ANCHORS = {
+    '0:1': 'threat model distinguishes replayed attestations',
+    '1:1': 'review must reject stale packet references',
+    '1:2': 'deterministic packet-specific duplicate rule',
+    '2:1': 'integration section turns the two technical passages',
+}
 
 
 def _assessment(slot, effect, refs=None, relevance="direct", distinct=True,
@@ -358,12 +363,80 @@ def test_direct_later_exact_duplicate_is_capped_without_denial(
     project["evidence_digest"] = hashlib.sha256(contract._evidence(project).encode("utf-8")).hexdigest()
     contract.projects[project_id] = json.dumps(project, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     duplicate_decision = _decision()
-    duplicate_decision["assessments"][1]["evidence_anchors"] = ["The"]
+    duplicate_decision["assessments"][1]["evidence_anchors"] = [ANCHORS["0:1"]]
     direct_vm.mock_llm(r"EVIDENCE_DIGEST=.*", json.dumps(duplicate_decision, separators=(",", ":")))
     contract.evaluate_contributions(project_id)
     settled = json.loads(contract.get_project(project_id))
     assert settled["status"] == "SETTLEMENT_EMITTED"
     assert settled["weights"] == [5, 1, 1]
+
+
+def test_direct_duplicate_penalty_is_specific_to_the_supporting_packet(
+    direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
+):
+    contract = direct_deploy(CONTRACT)
+    contributors = [direct_bob, direct_charlie, direct_accounts[4]]
+    project_id = _fully_frozen(contract, direct_vm, direct_alice, contributors)
+    project = json.loads(contract.get_project(project_id))
+    project["packets"][1][0]["text"] = project["packets"][0][0]["text"]
+    project["packets"][1].append({
+        "id": "1:2",
+        "text": "Original correction adds a deterministic packet-specific duplicate rule.",
+        "at": 1700000000,
+        "revision_of": "1:1",
+        "references": ["0:1"],
+        "sequence": 4,
+    })
+    contract.projects[project_id] = json.dumps(project, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    project = json.loads(contract.get_project(project_id))
+    project["evidence_digest"] = hashlib.sha256(contract._evidence(project).encode("utf-8")).hexdigest()
+    contract.projects[project_id] = json.dumps(project, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    decision = _decision(effects=("foundational", "foundational", "supporting"), refs=[["0:1"], ["1:2"], ["2:1"]])
+    decision["assessments"][1]["evidence_anchors"] = ["deterministic packet-specific duplicate rule"]
+    direct_vm.mock_llm(r"EVIDENCE_DIGEST=.*", json.dumps(decision, separators=(",", ":")))
+    contract.evaluate_contributions(project_id)
+    assert json.loads(contract.get_project(project_id))["weights"] == [5, 5, 1]
+
+
+def test_direct_duplicate_cannot_be_hidden_by_citing_a_clean_packet(
+    direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
+):
+    contract = direct_deploy(CONTRACT)
+    contributors = [direct_bob, direct_charlie, direct_accounts[4]]
+    project_id = _fully_frozen(contract, direct_vm, direct_alice, contributors)
+    project = json.loads(contract.get_project(project_id))
+    project["packets"][1][0]["text"] = project["packets"][0][0]["text"]
+    project["packets"][1].append({
+        "id": "1:2",
+        "text": "Original correction adds a deterministic packet-specific duplicate rule.",
+        "at": 1700000000,
+        "revision_of": "1:1",
+        "references": ["0:1"],
+        "sequence": 4,
+    })
+    contract.projects[project_id] = json.dumps(project, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    project = json.loads(contract.get_project(project_id))
+    project["evidence_digest"] = hashlib.sha256(contract._evidence(project).encode("utf-8")).hexdigest()
+    contract.projects[project_id] = json.dumps(project, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    decision = _decision(effects=("foundational", "foundational", "supporting"), refs=[["0:1"], ["1:1", "1:2"], ["2:1"]])
+    decision["assessments"][1]["evidence_anchors"] = [ANCHORS["0:1"], "deterministic packet-specific duplicate rule"]
+    direct_vm.mock_llm(r"EVIDENCE_DIGEST=.*", json.dumps(decision, separators=(",", ":")))
+    contract.evaluate_contributions(project_id)
+    assert json.loads(contract.get_project(project_id))["weights"] == [5, 1, 1]
+
+
+def test_direct_trivial_anchor_cannot_support_positive_merit(
+    direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
+):
+    contract = direct_deploy(CONTRACT)
+    contributors = [direct_bob, direct_charlie, direct_accounts[4]]
+    project_id = _fully_frozen(contract, direct_vm, direct_alice, contributors)
+    forged = _decision()
+    forged["assessments"][0]["evidence_anchors"] = ["The"]
+    direct_vm.mock_llm(r"EVIDENCE_DIGEST=.*", json.dumps(forged, separators=(",", ":")))
+    with direct_vm.expect_revert("invalid validator-agreed judgment"):
+        contract.evaluate_contributions(project_id)
+    assert json.loads(contract.get_project(project_id))["status"] == "FROZEN"
 
 
 def test_direct_assembler_omission_does_not_veto_substantial_credit(

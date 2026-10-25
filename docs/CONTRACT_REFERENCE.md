@@ -21,9 +21,9 @@
 
 ## Assessment and settlement rules
 
-Each assessment contains `relevance`, `distinct`, `correctness`, `material_effect`, `attribution_consistent`, `evidence_ids`, exact bounded `evidence_anchors`, and a bounded justification. Positive work must cite the contributor's own packet and anchors must be normalized substrings of the registered packet text. The contract derives bands `0/1/3/5`; model-provided weights, amounts and recipients are ignored.
+Each assessment contains `relevance`, `distinct`, `correctness`, `material_effect`, `attribution_consistent`, `evidence_ids`, exact bounded `evidence_anchors`, and a bounded justification. Positive work must cite the contributor's own packet. Anchors must be exact normalized packet excerpts, match on token boundaries, and contain identifiable content; isolated articles/stopwords such as `The` are rejected, while concise technical corrections remain eligible. The contract derives bands `0/1/3/5`; model-provided weights, amounts and recipients are ignored.
 
-An exact normalized packet copied later across slots is capped at supporting band `1`; earlier registered work remains assessable. Substantial paraphrase is not rejected by string equality and remains a validator judgment. A valid high classification does not require the assembler to have included that packet in `source_refs`.
+An exact normalized packet copied later across slots is capped at supporting band `1` only when that specific packet is part of the accepted supporting evidence; earlier registered work and a separate original packet from the same contributor remain assessable. Citing an unrelated clean packet cannot hide a copied cited packet. Substantial paraphrase is not rejected by string equality and remains a validator judgment. A valid high classification does not require the assembler to have included that packet in `source_refs`.
 
 Completion is independent of merit. If all three criteria are met and the final text exists, accepted bands produce deterministic integer allocations. If any criterion is partial/not met, informational assessments remain stored but settlement weights and amounts become `[0,0,0]` and the full principal is refunded. If consensus fails, frozen evidence and escrow remain unchanged and a later evaluation may retry.
 

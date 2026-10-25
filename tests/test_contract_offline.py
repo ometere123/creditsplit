@@ -8,7 +8,12 @@ import pytest
 from pathlib import Path
 
 ADDR = ['0x'+str(i)*40 for i in range(1,6)]
-ANCHORS = {'0:1': 'The', '1:1': 'Correction', '2:1': 'The'}
+ANCHORS = {
+    '0:1': 'threat model separates replayed attestations',
+    '1:1': 'packet references must bind to the signed contributor slot',
+    '1:2': 'deterministic packet-specific duplicate rule',
+    '2:1': 'editorial passage integrates the threat model',
+}
 
 
 def _assessment(slot, effect, refs=None, relevance="direct", distinct=True,
@@ -243,7 +248,7 @@ def test_later_exact_duplicate_is_capped_without_denial_of_settlement(fixture):
     project['evidence_digest'] = hashlib.sha256(c._evidence(project).encode('utf-8')).hexdigest()
     c._save(id, project)
     duplicate_decision = _decision()
-    duplicate_decision['assessments'][1]['evidence_anchors'] = ['The']
+    duplicate_decision['assessments'][1]['evidence_anchors'] = [ANCHORS['0:1']]
     FAKE.nondet.exec_prompt = lambda prompt, **kwargs: json.dumps(duplicate_decision)
     c.evaluate_contributions(id)
     settled = json.loads(c.get_project(id))
@@ -251,6 +256,52 @@ def test_later_exact_duplicate_is_capped_without_denial_of_settlement(fixture):
     assert settled['weights'] == [5, 1, 1]
     assert sum(int(amount) for amount in settled['amounts_wei']) == 90
     assert FAKE.transfers and FAKE.transfers[0][0] == ADDR[1]
+
+
+def test_duplicate_penalty_is_specific_to_the_supporting_packet(fixture):
+    c, _ = fixture; id = fully_submitted(c)
+    project = json.loads(c.get_project(id))
+    project['packets'][1][0]['text'] = project['packets'][0][0]['text']
+    project['packets'][1].append({
+        'id': '1:2',
+        'text': 'Original correction adds a deterministic packet-specific duplicate rule.',
+        'at': 1700000000,
+        'revision_of': '1:1',
+        'references': ['0:1'],
+        'sequence': 4,
+    })
+    c._save(id, project)
+    project = json.loads(c.get_project(id))
+    project['evidence_digest'] = hashlib.sha256(c._evidence(project).encode('utf-8')).hexdigest()
+    c._save(id, project)
+    decision = _decision(effects=('foundational', 'foundational', 'supporting'), refs=[['0:1'], ['1:2'], ['2:1']])
+    decision['assessments'][1]['evidence_anchors'] = ['deterministic packet-specific duplicate rule']
+    FAKE.nondet.exec_prompt = lambda prompt, **kwargs: json.dumps(decision)
+    c.evaluate_contributions(id)
+    assert json.loads(c.get_project(id))['weights'] == [5, 5, 1]
+
+
+def test_duplicate_cannot_be_hidden_by_citing_a_clean_packet(fixture):
+    c, _ = fixture; id = fully_submitted(c)
+    project = json.loads(c.get_project(id))
+    project['packets'][1][0]['text'] = project['packets'][0][0]['text']
+    project['packets'][1].append({
+        'id': '1:2',
+        'text': 'Original correction adds a deterministic packet-specific duplicate rule.',
+        'at': 1700000000,
+        'revision_of': '1:1',
+        'references': ['0:1'],
+        'sequence': 4,
+    })
+    c._save(id, project)
+    project = json.loads(c.get_project(id))
+    project['evidence_digest'] = hashlib.sha256(c._evidence(project).encode('utf-8')).hexdigest()
+    c._save(id, project)
+    decision = _decision(effects=('foundational', 'foundational', 'supporting'), refs=[['0:1'], ['1:1', '1:2'], ['2:1']])
+    decision['assessments'][1]['evidence_anchors'] = [ANCHORS['0:1'], 'deterministic packet-specific duplicate rule']
+    FAKE.nondet.exec_prompt = lambda prompt, **kwargs: json.dumps(decision)
+    c.evaluate_contributions(id)
+    assert json.loads(c.get_project(id))['weights'] == [5, 1, 1]
 
 
 def test_assembler_omission_is_not_an_economic_veto(fixture):
@@ -274,10 +325,20 @@ def test_substantial_paraphrase_and_shared_terms_are_not_exact_duplicates(fixtur
     project['evidence_digest'] = hashlib.sha256(c._evidence(project).encode('utf-8')).hexdigest()
     c._save(id, project)
     paraphrase = _decision()
-    paraphrase['assessments'][1]['evidence_anchors'] = ['The']
+    paraphrase['assessments'][1]['evidence_anchors'] = ['threat model separates replayed attestations']
     FAKE.nondet.exec_prompt = lambda prompt, **kwargs: json.dumps(paraphrase)
     c.evaluate_contributions(id)
     assert json.loads(c.get_project(id))['weights'] == [5, 3, 1]
+
+
+def test_trivial_anchor_cannot_support_positive_merit(fixture):
+    c, _ = fixture; id = fully_submitted(c)
+    forged = _decision()
+    forged['assessments'][0]['evidence_anchors'] = ['The']
+    FAKE.nondet.exec_prompt = lambda prompt, **kwargs: json.dumps(forged)
+    with pytest.raises(UserError):
+        c.evaluate_contributions(id)
+    assert json.loads(c.get_project(id))['status'] == 'FROZEN'
 
 
 def test_failed_completion_keeps_informational_merit_but_refunds(fixture):
