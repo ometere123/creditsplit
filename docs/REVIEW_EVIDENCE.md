@@ -5,6 +5,7 @@ This ledger separates source/test evidence from live StudioNet evidence. It does
 ## Source and implementation
 
 - Hardened implementation commit before deployment: [`3a745ab95795634769e9bd02993e58a52c10a71d`](https://github.com/ometere123/creditsplit/commit/3a745ab95795634769e9bd02993e58a52c10a71d).
+- GitHub Actions run for the preceding source-matched release commit [`b9839feff5869e683b359d341ba54ee470bd97cc`](https://github.com/ometere123/creditsplit/commit/b9839feff5869e683b359d341ba54ee470bd97cc): [`40201264933`](https://github.com/ometere123/creditsplit/actions/runs/40201264933), completed successfully.
 - Contract source SHA-256: `794231E47E0EF7873E6F14A4BBC9FC7B0D1CAF94A2C9BBDE9DBFD85A52612818`.
 - The hardened source removes assembler citation as an economic veto, applies exact-copy restrictions to cited packets only, rejects trivial anchors, stores exact packet anchors and registration sequence, and separates informational merit from incomplete-project settlement.
 - Combined Python suite: `60 passed`; GenVM semantic lint: `17 methods`, `5 views`, `12 writes`; frontend: `15` Vitest tests, strict TypeScript, production build and `2` desktop/mobile Playwright smoke projects passed locally.
@@ -44,7 +45,7 @@ This demonstrates fail-closed disagreement, unchanged frozen evidence, safe late
 
 - Existing project: `creditsplit`, Root Directory `frontend`, no GitHub auto-deploy integration.
 - Current production alias: [`https://creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app).
-- Current Ready deployment inspect page: [`GhwmKjhwjDXyxcEogi4c2Ls6Sg8h`](https://vercel.com/delealufejoel-4184s-projects/creditsplit/GhwmKjhwjDXyxcEogi4c2Ls6Sg8h). The build used Node `22.x`.
+- Current Ready deployment inspect page: [`3f8JPTkTEj96Mtd41kM2bhQhgzk9`](https://vercel.com/delealufejoel-4184s-projects/creditsplit/3f8JPTkTEj96Mtd41kM2bhQhgzk9). The build used Node `22.x`.
 - `NEXT_PUBLIC_CONTRACT_ADDRESS` was updated to the current address and the public URL returned HTTP `200` with discovery and wallet controls.
 - The local frontend now recognizes the pinned SDK's simplified StudioNet success receipt, scopes pending transaction recovery by chain/wallet/contract/method/hash, clears permanently failed finalized transactions and refreshes on account/network changes.
 - Connected-wallet QA was performed in the Convert Chrome profile with the injected Rabby EIP-1193 wallet. A real production create-and-fund write finalized at [`0x96f69cb434c0291a3b314b9d74e3f8204eec57c8888a7ac8807274eecaa20474`](https://explorer-studio.genlayer.com/tx/0x96f69cb434c0291a3b314b9d74e3f8204eec57c8888a7ac8807274eecaa20474), creating project `1` with `0.01 GEN`; refresh, reconnect, discovery and detail readback passed. Contributor wallet switching/signing was not available in this profile and is not claimed. Playwright remains desktop/mobile navigation and form smoke coverage, not a replacement for wallet signing evidence.

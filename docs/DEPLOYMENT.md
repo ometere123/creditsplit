@@ -68,8 +68,8 @@ Attempts [A](https://explorer-studio.genlayer.com/tx/0x5871890bcccbcb55d1b3980f2
 The existing Vercel project `creditsplit` uses `frontend/` as its Root Directory. The current environment points `NEXT_PUBLIC_CONTRACT_ADDRESS` to the current contract above. Authorized direct-source production deployment completed successfully:
 
 - Public alias: [`https://creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app)
-- Current deployment: [`https://creditsplit-iartng2c8-delealufejoel-4184s-projects.vercel.app`](https://creditsplit-iartng2c8-delealufejoel-4184s-projects.vercel.app)
-- Inspect: [`https://vercel.com/delealufejoel-4184s-projects/creditsplit/GhwmKjhwjDXyxcEogi4c2Ls6Sg8h`](https://vercel.com/delealufejoel-4184s-projects/creditsplit/GhwmKjhwjDXyxcEogi4c2Ls6Sg8h)
+- Current deployment: [`https://creditsplit-1wpw7qnkm-delealufejoel-4184s-projects.vercel.app`](https://creditsplit-1wpw7qnkm-delealufejoel-4184s-projects.vercel.app)
+- Inspect: [`https://vercel.com/delealufejoel-4184s-projects/creditsplit/3f8JPTkTEj96Mtd41kM2bhQhgzk9`](https://vercel.com/delealufejoel-4184s-projects/creditsplit/3f8JPTkTEj96Mtd41kM2bhQhgzk9)
 - Status: `Ready`; the build used Node `22.x`, and the public HTTP check returned `200` with discovery/wallet controls.
 
 GitHub auto-deployment is not connected; this is the existing authorized direct-source project, not a replacement Vercel project.
