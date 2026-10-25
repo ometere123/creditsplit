@@ -11,3 +11,4 @@ venv/
 *.log
 *.tsbuildinfo
 test-results/
+.vercel

@@ -4,52 +4,61 @@ This ledger separates source/test evidence from live StudioNet evidence. It does
 
 ## Source and implementation
 
-- Implementation commit: [`944f4643665e3c85edc2ae90471c24b6220409f6`](https://github.com/ometere123/creditsplit/commit/944f4643665e3c85edc2ae90471c24b6220409f6).
-- Contract source SHA-256: `5961AF1206D162BE60CE8756C2099B497FE81743924F7EB1393D893F5388551A`.
-- The contract now stores exactly three acceptance criteria, actual immutable packet text, bounded cross-packet references, final source references and attribution responses. The leader/validator output contains no weights or payment amounts; the contract derives `[0,1,3,5]` bands deterministically.
-- Python: 44 combined offline + Direct Mode tests passed. GenVM semantic lint passed with 17 methods, 5 views and 12 writes. Frontend: 12 Vitest tests, strict TypeScript, production build and 2 Playwright desktop/mobile smoke projects passed.
-- The test packets below are authored directly by disposable wallets. No external documents or contribution sources were fetched; this is on-chain authorship evidence for the registered wallets, not proof of identity outside the chain.
+- Contract implementation commit before deployment: [`18042d55d1de610b9f87d914a0bef3bfd8c7545f`](https://github.com/ometere123/creditsplit/commit/18042d55d1de610b9f87d914a0bef3bfd8c7545f).
+- Current final release commit is the later `main` commit recorded by GitHub after the frontend receipt fix and documentation closeout; the contract file is unchanged after `18042d55`.
+- Contract source SHA-256: `0AA8AACDDF5E65B72B60BFFC057F8393B46B586B7B60185C815CD1D50DDDCCAF`.
+- The corrected source removes assembler citation as an economic veto, stores exact packet anchors and registration sequence, caps later exact duplicates at band `1`, and separates informational merit from incomplete-project settlement.
+- Combined Python suite: `54 passed`; GenVM semantic lint: `17 methods`, `5 views`, `12 writes`; frontend: `15` Vitest tests, strict TypeScript, production build and `2` desktop/mobile Playwright smoke projects passed locally.
+- Runtime/frontend dependency audits passed at high severity; the required root CLI development tree retains separately reported advisories and is not represented as vulnerability-free.
+- Live packet text was authored directly by disposable wallets. It is on-chain wallet evidence, not proof of real-world identity or authorship.
 
 ## Deployment
 
 - Network: StudioNet, chain `61999`, RPC `https://studio.genlayer.com/api`.
-- New contract: [`0xaa14cb0B1f6c4868096Ef70dE131B93037B324fD`](https://explorer-studio.genlayer.com/address/0xaa14cb0B1f6c4868096Ef70dE131B93037B324fD).
-- Deployment: [`0x0291a6fc1967b16b2479dce2bd26a5d3febbb0a06e43b8336e0f13dda6ad6dbe`](https://explorer-studio.genlayer.com/tx/0x0291a6fc1967b16b2479dce2bd26a5d3febbb0a06e43b8336e0f13dda6ad6dbe), `FINALIZED`, `MAJORITY_AGREE`, five validator votes revealed, successful leader/validator execution.
-- `gen_getContractCode` decoded byte-for-byte to the committed source SHA-256. Initial readback: `get_project_count() = 0`; `get_accounting() = {active_escrow_wei:"0", project_count:0, total_dispatched_wei:"0"}`.
-- Historical contract `0xB8d8Cc8384a0eaeFFC7998521E2a4fFD8deFC5C3` was not modified.
+- Current contract: [`0x49a63512878c639C8205c7f0c32eeFa78E8aBF3f`](https://explorer-studio.genlayer.com/address/0x49a63512878c639C8205c7f0c32eeFa78E8aBF3f).
+- Deployment transaction: [`0x2016405aad3d64cec94db8065c02d647b9019d7f28d9d5dd0fe75b4f3fca435b`](https://explorer-studio.genlayer.com/tx/0x2016405aad3d64cec94db8065c02d647b9019d7f28d9d5dd0fe75b4f3fca435b), `FINALIZED`, `MAJORITY_AGREE`, five validator votes agreed, leader execution `SUCCESS`.
+- `gen_getContractCode` decoded to 30,616 bytes with the exact committed SHA-256 above.
+- Initial readback: `get_project_count()=0`; `get_accounting()={active_escrow_wei:"0",project_count:0,total_dispatched_wei:"0"}`.
+- Historical contracts and their evidence remain untouched.
 
-## Completed evidence-based lifecycle
+## Corrected live successful judgment
 
-Project 1 was funded with `0.09 GEN` by the sponsor and used three distinct contributor wallets. The immutable on-chain packets were:
+Project 2 funded `90000000000000000` wei and registered three distinct packets:
 
-- A / `0:1`: foundational trust-boundary map.
-- B / `1:1`: a technical correction separating escrow, allocation, transfer emission, child execution and beneficiary balance confirmation; it referenced `0:1`.
-- C / `2:1`: integration/editorial work referencing `0:1` and `1:1`.
+| Slot | Packet | Work and relationship |
+| --- | --- | --- |
+| A | `0:1` | Immutable packet/revision model; foundational work |
+| B | `1:1` | Independent review dimensions; references `0:1` |
+| C | `2:1` | Deterministic settlement/refund rule; references `0:1` and `1:1` |
 
-The assembler's final text cited all three packet IDs. The frozen digest was `8c8cc231d2525e7a9a2d7478f4594fa63d0d9bfe72f87d8f76615b544b483bf9`. The finalized evaluation stored `criteria_status=["met","met","met"]`, assessments `foundational/substantial/supporting`, weights `[5,3,1]`, and amounts `[50000000000000000,30000000000000000,10000000000000000]` wei. The leader and validators—not the sponsor or frontend—controlled that judgment.
+The assembler's final artifact included all three passages but submitted only `source_refs=["0:1","2:1"]`, deliberately omitting B. The frozen digest was `c90c6fa749bb6db09f8197ee289d2012496148da1c7fac3bc8b0fc866ecd563a`. Evaluation [`0xfa0f5ead76400df101bd1d2b4219312bde47c4d229eb4a3d150041cd93b6c8a8`](https://explorer-studio.genlayer.com/tx/0xfa0f5ead76400df101bd1d2b4219312bde47c4d229eb4a3d150041cd93b6c8a8) finalized `MAJORITY_AGREE`, criteria `met/met/met`, accepted weights `[5,3,3]`, and assessments with evidence anchors for `0:1`, `1:1` and `2:1`. B's justification explicitly noted that its packet was materially valuable despite being omitted from `source_refs`.
 
-The evaluation transaction is [`0x0acf5f25de45815dcdd39546b3c6ac7fe04ddf3b948bd6109359986168b25ce3`](https://explorer-studio.genlayer.com/tx/0x0acf5f25de45815dcdd39546b3c6ac7fe3b948bd6109359986168b25ce3). Its three triggered messages were:
+The contract reconstructed amounts `[40909090909090910,24545454545454545,24545454545454545]` wei. Child transactions [`0x9bdee49c353b52cd900027322f94202a7e6a8acf1bdf90ae8bf6715415e9d875`](https://explorer-studio.genlayer.com/tx/0x9bdee49c353b52cd900027322f94202a7e6a8acf1bdf90ae8bf6715415e9d875), [`0x936c2e734e5a8070ef2ff521302c8609122581c3507d0655fc0f4ff71c902345`](https://explorer-studio.genlayer.com/tx/0x936c2e734e5a8070ef2ff521302c8609122581c3507d0655fc0f4ff71c902345) and [`0x57288bdc5ab30007e348a0496300549812359ba79f74eff8519e02bce8d3cc03`](https://explorer-studio.genlayer.com/tx/0x57288bdc5ab30007e348a0496300549812359ba79f74eff8519e02bce8d3cc03) finalized with `value_credited=true`; exact RPC balance deltas matched all three amounts. The contract readback was `SETTLEMENT_EMITTED` / `EMITTED_UNVERIFIED`, so the balance checks are the delivery evidence.
 
-| Recipient | Child transaction | Value | Verified balance delta |
-| --- | --- | ---: | ---: |
-| A | [`0x2fd0309e631584037cf61fac7689489b8a67791ac3af5dfba060e0d4f42ac499`](https://explorer-studio.genlayer.com/tx/0x2fd0309e631584037cf61fac7689489b8a67791ac3af5dfba060e0d4f42ac499) | `0.05 GEN` | `0.11 → 0.16 GEN` |
-| B | [`0x493968bfcc746ff5ab9558961bf1d4cf2ccc89ff61f7cf828cc96313cdcc8812`](https://explorer-studio.genlayer.com/tx/0x493968bfcc746ff5ab9558961bf1d4cf2ccc89ff61f7cf828cc96313cdcc8812) | `0.03 GEN` | `0.11 → 0.14 GEN` |
-| C | [`0x2b119900f33263772d27c6b5f966b4f87964276327ec3b929f24f8cda5634a61`](https://explorer-studio.genlayer.com/tx/0x2b119900f33263772d27c6b5f966b4f87964276327ec3b929f24f8cda5634a61) | `0.01 GEN` | `0.11 → 0.12 GEN` |
+## Incomplete completion and safe retry
 
-Each child finalized and reported `value_credited=true`; the child consensus label was `NO_MAJORITY`, so the balance deltas—not the parent `EMITTED_UNVERIFIED` label—are the payment proof. Final accounting readback was `active_escrow_wei=0` and `total_dispatched_wei=90000000000000000`; profiles recorded points `5/3/1` and matching allocated amounts.
+Project 1 intentionally retained only A's useful packet and a final text that omitted two criteria. Evaluation [`0xad470281c94843b2d100137484e6332ba0c05f7cf6d6c8706fee369bbc69ae8b`](https://explorer-studio.genlayer.com/tx/0xad470281c94843b2d100137484e6332ba0c05f7cf6d6c8706fee369bbc69ae8b) finalized `MAJORITY_DISAGREE / ERROR` with no settlement change. A retry over the same frozen digest [`0x7704de27424830c93636906377615d8d8d207d10e9575222d9bc63ae07309078`](https://explorer-studio.genlayer.com/tx/0x7704de27424830c93636906377615d8d8d207d10e9575222d9bc63ae07309078) finalized `MAJORITY_AGREE`, stored `completion=false`, criteria `["met","not_met","not_met"]`, informational weights `[5,0,0]`, settlement weights `[0,0,0]`, and no contributor payout. Refund child [`0x8bde4b39b0bd0387a6422a88b2893ca5e609829a6fbf6185f43c45bec267e4bd`](https://explorer-studio.genlayer.com/tx/0x8bde4b39b0bd0387a6422a88b2893ca5e609829a6fbf6185f43c45bec267e4bd) finalized with `value_credited=true` to the sponsor for the full `90000000000000000` wei.
 
-## Adversarial case
+This demonstrates fail-closed disagreement, unchanged frozen evidence, safe later resolution, no double settlement and honest refund accounting. It does not establish a universal recovery guarantee for all future validator failures.
 
-Project 2 used a separate `0.001 GEN` pool and an impossible third criterion. The assembler's forged source reference transaction [`0x9fb76a439b8544382155340eafdf998d43db3b58f47b0c6b0d5e47ccbd3d39a1`](https://explorer-studio.genlayer.com/tx/0x9fb76a439b8544382155340eafdf998d43db3b58f47b0c6b0d5e47ccbd3d39a1) finalized with leader execution `ERROR`; state remained `ASSEMBLY`, with no final text. After a valid but incomplete artifact, evaluation [`0x3dbcf5c8c2d5d44b898cc0741e9a100a796f81f141237e1c4db00ddf3bcb9e24`](https://explorer-studio.genlayer.com/tx/0x3dbcf5c8c2d5d44b898cc0741e9a100a796f81f141237e1c4db00ddf3bcb9e24) reached `FINALIZED / MAJORITY_DISAGREE / ERROR`; no payout fields or child transfers were written and the `0.001 GEN` remained active escrow. A second retry was not submitted because the RPC failed before producing a hash.
+## Vercel and frontend
 
-## Earlier deployment failures
+- Existing project: `creditsplit`, Root Directory `frontend`, no GitHub auto-deploy integration.
+- Current production alias: [`https://creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app).
+- Current Ready deployment inspect page: [`GhwmKjhwjDXyxcEogi4c2Ls6Sg8h`](https://vercel.com/delealufejoel-4184s-projects/creditsplit/GhwmKjhwjDXyxcEogi4c2Ls6Sg8h). The build used Node `22.x`.
+- `NEXT_PUBLIC_CONTRACT_ADDRESS` was updated to the current address and the public URL returned HTTP `200` with discovery and wallet controls.
+- The local frontend now recognizes the pinned SDK's simplified StudioNet success receipt, scopes pending transaction recovery by chain/wallet/contract/method/hash, clears permanently failed finalized transactions and refreshes on account/network changes.
+- Connected MetaMask end-to-end QA was not claimed by the automated smoke suite; the Playwright evidence is desktop/mobile navigation and form coverage. Manual wallet QA should still be performed by the reviewer with funded disposable wallets.
 
-Attempts [A](https://explorer-studio.genlayer.com/tx/0x5871890bcccbcb55d1b3980f28e5e04953cfdafc21ddee5a7147d7b9e77fbe86), [B](https://explorer-studio.genlayer.com/tx/0x144c2cba41795aa9792c1bfb74d63575a4274a9c7bd4aab51ef8bd163915d3dd) and [C](https://explorer-studio.genlayer.com/tx/0x090f3314d1fa3f3bd2a8732a91e340e1f6098b89445e6d175ad11a2313569769) were zero-value `Send`-type submissions with no validator assignment, no round data, `NO_MAJORITY`, no registered contract address and no value credit. The minimal diagnostic and current deployment later succeeded, establishing that the shared deployment path can work. The exact subcause of the earlier individual transactions remains unresolved because the RPC exposed no trace/lifecycle methods for them.
+## Prior evidence
 
-## Incomplete external gates
+The former contract, former `[5,3,1]` lifecycle and historical unresolved project remain documented in Git history and older deployment records. They are preserved as historical evidence, not mixed with the current source-matched address.
 
-- Live recruitment-expiry and incomplete-deliverable refund receipts were not claimed; StudioNet deadlines are wall-clock enforced and the adversarial project intentionally remains frozen after an inconclusive judgment.
-- Vercel GitHub auto-deployment remains unconnected, but the authorized direct-source deployment is verified at [`creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app); its deployment is `Ready` and the public HTTP check returned `200`.
-- GitHub Actions for the final release commit is green: [run 40110536120](https://github.com/ometere123/creditsplit/actions/runs/40110536120), with successful `contract-offline` and `frontend` jobs.
+## Readiness assessment
 
-Reviewers should inspect the source, tests, deployment receipt, project readbacks, child transaction records and recipient balances directly. The evidence supports a real source-matched deployment and an evidence-based live judgment; it does not justify automatic 5/5/5/5 scores.
+- GenLayer Fit: strong evidence that independent nondeterministic consensus controls economically consequential attribution; no centralized adjudicator exists.
+- Contract Quality: targeted fixes are implemented and live-tested; external EOA delivery remains callbackless and disagreement can remain fail-closed.
+- Engineering: reproducible pinned tests, lint, source-matched deployment and live readbacks are evidenced; final CI URL is recorded after the release commit completes.
+- Frontend/UX: connected read/write paths and receipt recovery are implemented and built; automated connected-wallet browser QA remains a separately stated limitation.
+
+Reviewers should inspect the source, final CI run, deployment receipt, project readbacks, parent/child records and recipient balances directly. This ledger does not award portal scores.

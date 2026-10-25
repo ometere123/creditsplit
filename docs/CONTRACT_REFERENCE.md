@@ -1,30 +1,40 @@
 # Creditsplit contract reference
 
-`contracts/Creditsplit.py` is the sole authority for eligibility, evidence, settlement state and accounting. All JSON-returning views are public contract storage serialized as UTF-8 JSON; the browser does not supply authoritative state.
+`contracts/Creditsplit.py` is the sole authority for eligibility, evidence, settlement state and accounting. JSON-returning views expose public contract storage as UTF-8 JSON; the browser supplies no authoritative state.
 
 ## Public writes
 
 | Method | Caller and effect |
 | --- | --- |
-| `create_project(title, brief, a, b, c, assembler_slot)` payable | Backward-compatible constructor path using the contract's three default acceptance criteria. Any sponsor funds a positive native-GEN pool, registers exactly three distinct non-sponsor wallets and selects the assembler slot. |
-| `create_project_with_criteria(title, brief, criteria_json, a, b, c, assembler_slot)` payable | Preferred path. Locks exactly three UTF-8 acceptance criteria with the funded brief and contributor wallets; the principal is added once to `active_escrow`. |
-| `join_project(id)` | Only an invited wallet can join its own slot before the 48-hour recruitment deadline. The project becomes `ACTIVE` after all three joins. |
-| `submit_contribution(id, content)` | A joined contributor can append at most two bounded UTF-8 packets before the 72-hour contribution deadline. The packet text is the work itself; packet IDs and revision links are immutable after submission. |
-| `submit_contribution_with_references(id, content, references_json)` | Same immutable packet path, with up to three references to packets already registered by any contributor. References are bounded and validated on-chain, enabling corrections and build-on relationships without external evidence. |
-| `finish_contributing(id)` | A joined contributor closes its slot. When all three close, assembly starts immediately. |
-| `submit_final_artifact(id, text, source_refs_json)` | Only the selected assembler can publish a bounded final document during the 24-hour assembly window, and every reference must name a registered packet. |
-| `respond_attribution(id, response)` | Each contributor can submit one bounded response and acknowledgment during the 24-hour review window. |
-| `advance_project(id)` | Any caller can move an expired active project to assembly or create a deterministic latest-packet fallback after assembler timeout. |
-| `freeze_project(id)` | Any caller can freeze after all acknowledgments or the review deadline. The canonical evidence snapshot is hashed with SHA-256 over UTF-8 JSON. |
-| `evaluate_contributions(id)` | Only frozen evidence can enter the GenLayer leader/validator equivalence block. Leader and validators assess criteria, actual passages, revisions, references, final text and attribution responses. Agreement on completion, criterion statuses, payment-controlling classifications and derived bands is required before accounting or external messages. |
-| `refund_unstarted_project(id)` | Any caller can refund the sponsor after recruitment expires if all three wallets did not join. |
+| `create_project(title, brief, a, b, c, assembler_slot)` payable | Backward-compatible path using the three default criteria. The sponsor funds a positive native-GEN pool and registers exactly three distinct non-sponsor wallets. |
+| `create_project_with_criteria(title, brief, criteria_json, a, b, c, assembler_slot)` payable | Preferred path. Locks exactly three bounded UTF-8 acceptance criteria and adds the principal once to `active_escrow`. |
+| `join_project(id)` | An invited wallet joins its own immutable slot before the 48-hour recruitment deadline. All three joins activate the project. |
+| `submit_contribution(id, content)` | A joined contributor appends at most two immutable bounded UTF-8 packets. The packet text is the work itself. |
+| `submit_contribution_with_references(id, content, references_json)` | Same packet path with up to three references to already registered packets. References authenticate correction/build-on relationships but do not prove real-world authorship. Each packet receives a contract registration sequence. |
+| `finish_contributing(id)` | A contributor closes its slot; when all three close, assembly starts. |
+| `submit_final_artifact(id, text, source_refs_json)` | The selected assembler publishes bounded final text and authentic packet references. `source_refs` are attribution claims, not an economic veto. |
+| `respond_attribution(id, response)` | Each contributor seals one bounded review response. |
+| `advance_project(id)` | Permissionless deadline transition or deterministic latest-packet fallback after assembler timeout. |
+| `freeze_project(id)` | Canonicalizes the brief, criteria, roles, packets, revisions, final text, source refs and responses, then stores a SHA-256 evidence digest. |
+| `evaluate_contributions(id)` | Runs the leader and independent validators over the frozen evidence. Only validator-agreed payment classifications can settle. |
+| `refund_unstarted_project(id)` | Permissionless full refund after recruitment expiry if all three wallets did not join. |
+
+## Assessment and settlement rules
+
+Each assessment contains `relevance`, `distinct`, `correctness`, `material_effect`, `attribution_consistent`, `evidence_ids`, exact bounded `evidence_anchors`, and a bounded justification. Positive work must cite the contributor's own packet and anchors must be normalized substrings of the registered packet text. The contract derives bands `0/1/3/5`; model-provided weights, amounts and recipients are ignored.
+
+An exact normalized packet copied later across slots is capped at supporting band `1`; earlier registered work remains assessable. Substantial paraphrase is not rejected by string equality and remains a validator judgment. A valid high classification does not require the assembler to have included that packet in `source_refs`.
+
+Completion is independent of merit. If all three criteria are met and the final text exists, accepted bands produce deterministic integer allocations. If any criterion is partial/not met, informational assessments remain stored but settlement weights and amounts become `[0,0,0]` and the full principal is refunded. If consensus fails, frozen evidence and escrow remain unchanged and a later evaluation may retry.
 
 ## Public views
 
-`get_project(id)`, `get_project_count()`, `list_projects(start_id, count)`, `get_profile(wallet)`, and `get_accounting()` expose state for the browser and independent verification. `get_project` includes packet history, the frozen digest, accepted bands, deterministic `amounts_wei`, settlement label and timestamps.
+`get_project(id)`, `get_project_count()`, `list_projects(start_id, count)`, `get_profile(wallet)`, and `get_accounting()` expose public state. `get_project` includes packet sequence/revision history, final text, source refs, frozen digest, criteria status, decision assessments, informational weights, settlement label and deterministic `amounts_wei`.
 
 ## Settlement labels
 
-`NOT_EMITTED` means no settlement decision has been written. `EMITTED_UNVERIFIED` means the contract reached a terminal settlement state and emitted finalization-triggered EOA messages; it does not prove the child messages succeeded or that balances changed. The application therefore keeps the label visible and instructs reviewers to inspect each external-message result and beneficiary balance.
+`NOT_EMITTED` means no terminal settlement decision exists. `EMITTED_UNVERIFIED` means the contract reached a terminal state and emitted finalization-triggered EOA messages; it does not prove child execution or balance credit. Inspect every child result and recipient balance. The contract has no administrator withdrawal, arbitrary payout amount, manual claim path or blind retry.
 
-The contract has no administrator withdrawal, manual claim, arbitrary payout amount, or second settlement path. A terminal state is written before dispatch, so replayed evaluation cannot emit a second allocation. If an external transfer fails, the protocol limitation is surfaced; the contract does not invent a receipt or silently retry.
+## Current deployment
+
+The verified current address is [`0x49a63512878c639C8205c7f0c32eeFa78E8aBF3f`](https://explorer-studio.genlayer.com/address/0x49a63512878c639C8205c7f0c32eeFa78E8aBF3f). Its source provenance and live transaction ledger are in [`docs/DEPLOYMENT.md`](DEPLOYMENT.md) and [`docs/REVIEW_EVIDENCE.md`](REVIEW_EVIDENCE.md).

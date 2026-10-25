@@ -93,10 +93,45 @@ export function isFinalizedExecutionFailure(error:unknown):boolean {
 
 class FinalizedExecutionFailure extends Error {
   constructor(public readonly hash:string,public readonly receipt:unknown) {
-    const details=receipt as {statusName?:string;txExecutionResultName?:string};
-    super(`Transaction finalized without successful execution: ${details.statusName ?? 'unknown'} / ${details.txExecutionResultName ?? 'unknown'}. Inspect ${hash}.`);
+    const details=receipt as {statusName?:string;status_name?:string;txExecutionResultName?:string;tx_execution_result_name?:string;resultName?:string;result_name?:string};
+    super(`Transaction finalized without successful execution: ${details.statusName ?? details.status_name ?? 'unknown'} / ${details.txExecutionResultName ?? details.tx_execution_result_name ?? details.resultName ?? details.result_name ?? 'unknown'}. Inspect ${hash}.`);
     this.name='FinalizedExecutionFailure';
   }
+}
+
+type ReceiptRecord=Record<string,unknown>;
+function asReceiptRecord(value:unknown):ReceiptRecord|null {
+  return typeof value==='object'&&value!==null?value as ReceiptRecord:null;
+}
+function receiptString(receipt:ReceiptRecord,camel:string,snake:string):string|undefined {
+  const value=receipt[camel]??receipt[snake];
+  return typeof value==='string'?value:undefined;
+}
+function receiptNumber(receipt:ReceiptRecord,key:string):number|undefined {
+  const value=receipt[key];
+  return typeof value==='number'?value:typeof value==='string'?Number(value):undefined;
+}
+
+/**
+ * StudioNet's genlayer-js 1.1.8 simplified receipt omits txExecutionResultName.
+ * In that shape, the authoritative successful parent signal is FINALIZED plus
+ * MAJORITY_AGREE and a successful leader execution. Never treat finalization
+ * alone as proof of a successful contract write.
+ */
+export function isSuccessfulFinalizedReceipt(value:unknown):boolean {
+  const receipt=asReceiptRecord(value);
+  if(!receipt) return false;
+  const status=receiptString(receipt,'statusName','status_name');
+  const finalized=status==='FINALIZED'||receiptNumber(receipt,'status')===7;
+  if(!finalized) return false;
+  const execution=receiptString(receipt,'txExecutionResultName','tx_execution_result_name');
+  if(execution) return execution===ExecutionResult.FINISHED_WITH_RETURN;
+  const result=receiptString(receipt,'resultName','result_name');
+  const consensus=asReceiptRecord(receipt.consensusData??receipt.consensus_data);
+  const leaderReceipts=consensus?.leader_receipt;
+  const leader=Array.isArray(leaderReceipts)?asReceiptRecord(leaderReceipts[0]):null;
+  const leaderExecution=leader&&typeof leader.execution_result==='string'?leader.execution_result:undefined;
+  return result==='MAJORITY_AGREE'&&leaderExecution==='SUCCESS';
 }
 
 export interface Provider { request(args:{method:string;params?:unknown[]}):Promise<unknown>;on?(event:string, callback:(...args:unknown[])=>void):void;removeListener?(event:string,callback:(...args:unknown[])=>void):void; }
@@ -131,7 +166,7 @@ export async function connectWallet(): Promise<string> {
 }
 export async function waitForSuccessfulFinalization(hash:string) {
   const receipt=await readClient().waitForTransactionReceipt({hash:asHash(hash),status:TransactionStatus.FINALIZED});
-  if(receipt.txExecutionResultName!==ExecutionResult.FINISHED_WITH_RETURN){
+  if(!isSuccessfulFinalizedReceipt(receipt)){
     throw new FinalizedExecutionFailure(hash,receipt);
   }
   return receipt;

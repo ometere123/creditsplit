@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {makeSubmittedTransaction,parseSubmittedTransaction,recoveryMatchesWallet,submittedTransactionStorageKey} from '../lib/chain';
+import {isSuccessfulFinalizedReceipt,makeSubmittedTransaction,parseSubmittedTransaction,recoveryMatchesWallet,submittedTransactionStorageKey} from '../lib/chain';
 import {parseGen,formatGen,bytes,validateCriteria,validateProjectInput} from '../lib/types';
 const a='0x'+'1'.repeat(40),b='0x'+'2'.repeat(40),c='0x'+'3'.repeat(40),s='0x'+'4'.repeat(40);
 describe('funding and input invariants',()=>{
@@ -29,4 +29,7 @@ describe('transaction recovery scope',()=>{
     expect(recoveryMatchesWallet(record,'0x'+'1'.repeat(40))).toBe(true);
   });
   it('rejects malformed recovery records',()=>expect(parseSubmittedTransaction('{"hash":"not-a-hash"}')).toBeNull());
+  it('accepts the pinned SDK simplified StudioNet success receipt',()=>expect(isSuccessfulFinalizedReceipt({status_name:'FINALIZED',result_name:'MAJORITY_AGREE',consensus_data:{leader_receipt:[{execution_result:'SUCCESS'}]}})).toBe(true));
+  it('rejects finalized disagreement even when the status is final',()=>expect(isSuccessfulFinalizedReceipt({status_name:'FINALIZED',result_name:'MAJORITY_DISAGREE',consensus_data:{leader_receipt:[{execution_result:'ERROR'}]}})).toBe(false));
+  it('accepts an explicit successful execution result when present',()=>expect(isSuccessfulFinalizedReceipt({statusName:'FINALIZED',txExecutionResultName:'FINISHED_WITH_RETURN'})).toBe(true));
 });
