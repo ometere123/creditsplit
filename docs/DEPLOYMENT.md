@@ -4,7 +4,7 @@ This runbook uses only StudioNet chain `61999`, RPC `https://studio.genlayer.com
 
 ## Current verified deployment
 
-The corrected contract implementation was committed on `main` at [`18042d55d1de610b9f87d914a0bef3bfd8c7545f`](https://github.com/ometere123/creditsplit/commit/18042d55d1de610b9f87d914a0bef3bfd8c7545f) before deployment. Release commit [`48209010b867594d4d56fef6e8d3d30e2dd05195`](https://github.com/ometere123/creditsplit/commit/48209010b867594d4d56fef6e8d3d30e2dd05195) contains the frontend receipt-compatibility fix, Node 22 pin and evidence documentation; the contract file itself is unchanged, so its source hash remains source-matched.
+The hardened contract implementation was committed on `main` at [`3a745ab95795634769e9bd02993e58a52c10a71d`](https://github.com/ometere123/creditsplit/commit/3a745ab95795634769e9bd02993e58a52c10a71d) before deployment. It applies duplicate restrictions to cited packets only and rejects trivial evidence anchors while preserving independent validator assessment.
 
 Deployment command:
 
@@ -14,14 +14,18 @@ npx --no-install genlayer deploy --contract contracts/Creditsplit.py --rpc https
 
 | Item | Verified value |
 | --- | --- |
-| Contract | [`0x49a63512878c639C8205c7f0c32eeFa78E8aBF3f`](https://explorer-studio.genlayer.com/address/0x49a63512878c639C8205c7f0c32eeFa78E8aBF3f) |
-| Deployment transaction | [`0x2016405aad3d64cec94db8065c02d647b9019d7f28d9d5dd0fe75b4f3fca435b`](https://explorer-studio.genlayer.com/tx/0x2016405aad3d64cec94db8065c02d647b9019d7f28d9d5dd0fe75b4f3fca435b) |
-| Status | `FINALIZED`, `MAJORITY_AGREE`, five validator votes `AGREE`, leader execution `SUCCESS` |
-| Contract source SHA-256 | `0AA8AACDDF5E65B72B60BFFC057F8393B46B586B7B60185C815CD1D50DDDCCAF` |
-| Registered source | `gen_getContractCode` decoded to exactly the same SHA-256; 30,616 bytes |
+| Contract | [`0x03EEC54406D220ce484002A1A493d73D09b7F57C`](https://explorer-studio.genlayer.com/address/0x03EEC54406D220ce484002A1A493d73D09b7F57C) |
+| Deployment transaction | [`0x64f7f36cbc2eb8349e6e68850cc00bf839fecb7251c05941b1b67a62d95d405f`](https://explorer-studio.genlayer.com/tx/0x64f7f36cbc2eb8349e6e68850cc00bf839fecb7251c05941b1b67a62d95d405f) |
+| Status | `FINALIZED`, `MAJORITY_AGREE`, leader execution `SUCCESS`, three validator `AGREE` votes with two quorum-cancelled `IDLE` entries |
+| Contract source SHA-256 | `794231E47E0EF7873E6F14A4BBC9FC7B0D1CAF94A2C9BBDE9DBFD85A52612818` |
+| Registered source | `gen_getContractCode` decoded to exactly the same SHA-256; 32,875 bytes |
 | Initial readback | `get_project_count() = 0`; accounting `{active_escrow_wei:"0", project_count:0, total_dispatched_wei:"0"}` |
 
-The old contract `0xaa14cb0B1f6c4868096Ef70dE131B93037B324fD` and earlier historical contract `0xB8d8Cc8384a0eaeFFC7998521E2a4fFD8deFC5C3` remain historical evidence and were not modified. The frontend target is only the current address above.
+The previous contracts `0x49a63512878c639C8205c7f0c32eeFa78E8aBF3f`, `0xaa14cb0B1f6c4868096Ef70dE131B93037B324fD` and `0xB8d8Cc8384a0eaeFFC7998521E2a4fFD8deFC5C3` remain historical evidence and were not modified. The frontend target is only the current address above.
+
+## Production browser write
+
+In the Convert Chrome profile using the injected Rabby wallet, the production form created project `1` with transaction [`0x96f69cb434c0291a3b314b9d74e3f8204eec57c8888a7ac8807274eecaa20474`](https://explorer-studio.genlayer.com/tx/0x96f69cb434c0291a3b314b9d74e3f8204eec57c8888a7ac8807274eecaa20474). The parent finalized `MAJORITY_AGREE`, the leader and validators executed successfully, and `value_credited=true`. Direct readback confirmed sponsor `0x23187BF36c9B935189cDa33DEEEc6912bC2A211B`, the three invited wallets, the three immutable criteria and `pool_wei=10000000000000000`. After a browser refresh and reconnect, discovery and project detail displayed project `1` and the new contract address. Contributor-side browser signing was not available in this profile and is not claimed.
 
 ## Corrected live lifecycle: successful completion
 

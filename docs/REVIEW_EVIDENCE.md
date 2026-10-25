@@ -4,25 +4,23 @@ This ledger separates source/test evidence from live StudioNet evidence. It does
 
 ## Source and implementation
 
-- Contract implementation commit before deployment: [`18042d55d1de610b9f87d914a0bef3bfd8c7545f`](https://github.com/ometere123/creditsplit/commit/18042d55d1de610b9f87d914a0bef3bfd8c7545f).
-- Release commit containing the frontend receipt fix, Node 22 pin and documentation closeout: [`48209010b867594d4d56fef6e8d3d30e2dd05195`](https://github.com/ometere123/creditsplit/commit/48209010b867594d4d56fef6e8d3d30e2dd05195). The contract file is unchanged after `18042d55`.
-- GitHub Actions run for that exact release commit: [`40195814452`](https://github.com/ometere123/creditsplit/actions/runs/40195814452), completed successfully.
-- Contract source SHA-256: `0AA8AACDDF5E65B72B60BFFC057F8393B46B586B7B60185C815CD1D50DDDCCAF`.
-- The corrected source removes assembler citation as an economic veto, stores exact packet anchors and registration sequence, caps later exact duplicates at band `1`, and separates informational merit from incomplete-project settlement.
-- Combined Python suite: `54 passed`; GenVM semantic lint: `17 methods`, `5 views`, `12 writes`; frontend: `15` Vitest tests, strict TypeScript, production build and `2` desktop/mobile Playwright smoke projects passed locally.
+- Hardened implementation commit before deployment: [`3a745ab95795634769e9bd02993e58a52c10a71d`](https://github.com/ometere123/creditsplit/commit/3a745ab95795634769e9bd02993e58a52c10a71d).
+- Contract source SHA-256: `794231E47E0EF7873E6F14A4BBC9FC7B0D1CAF94A2C9BBDE9DBFD85A52612818`.
+- The hardened source removes assembler citation as an economic veto, applies exact-copy restrictions to cited packets only, rejects trivial anchors, stores exact packet anchors and registration sequence, and separates informational merit from incomplete-project settlement.
+- Combined Python suite: `60 passed`; GenVM semantic lint: `17 methods`, `5 views`, `12 writes`; frontend: `15` Vitest tests, strict TypeScript, production build and `2` desktop/mobile Playwright smoke projects passed locally.
 - Runtime/frontend dependency audits passed at high severity; the required root CLI development tree retains separately reported advisories and is not represented as vulnerability-free.
 - Live packet text was authored directly by disposable wallets. It is on-chain wallet evidence, not proof of real-world identity or authorship.
 
 ## Deployment
 
 - Network: StudioNet, chain `61999`, RPC `https://studio.genlayer.com/api`.
-- Current contract: [`0x49a63512878c639C8205c7f0c32eeFa78E8aBF3f`](https://explorer-studio.genlayer.com/address/0x49a63512878c639C8205c7f0c32eeFa78E8aBF3f).
-- Deployment transaction: [`0x2016405aad3d64cec94db8065c02d647b9019d7f28d9d5dd0fe75b4f3fca435b`](https://explorer-studio.genlayer.com/tx/0x2016405aad3d64cec94db8065c02d647b9019d7f28d9d5dd0fe75b4f3fca435b), `FINALIZED`, `MAJORITY_AGREE`, five validator votes agreed, leader execution `SUCCESS`.
-- `gen_getContractCode` decoded to 30,616 bytes with the exact committed SHA-256 above.
+- Current contract: [`0x03EEC54406D220ce484002A1A493d73D09b7F57C`](https://explorer-studio.genlayer.com/address/0x03EEC54406D220ce484002A1A493d73D09b7F57C).
+- Deployment transaction: [`0x64f7f36cbc2eb8349e6e68850cc00bf839fecb7251c05941b1b67a62d95d405f`](https://explorer-studio.genlayer.com/tx/0x64f7f36cbc2eb8349e6e68850cc00bf839fecb7251c05941b1b67a62d95d405f), `FINALIZED`, `MAJORITY_AGREE`, leader execution `SUCCESS`.
+- `gen_getContractCode` decoded to 32,875 bytes with the exact committed SHA-256 above.
 - Initial readback: `get_project_count()=0`; `get_accounting()={active_escrow_wei:"0",project_count:0,total_dispatched_wei:"0"}`.
 - Historical contracts and their evidence remain untouched.
 
-## Corrected live successful judgment
+## Historical live successful judgment on the prior contract
 
 Project 2 funded `90000000000000000` wei and registered three distinct packets:
 
@@ -49,7 +47,7 @@ This demonstrates fail-closed disagreement, unchanged frozen evidence, safe late
 - Current Ready deployment inspect page: [`GhwmKjhwjDXyxcEogi4c2Ls6Sg8h`](https://vercel.com/delealufejoel-4184s-projects/creditsplit/GhwmKjhwjDXyxcEogi4c2Ls6Sg8h). The build used Node `22.x`.
 - `NEXT_PUBLIC_CONTRACT_ADDRESS` was updated to the current address and the public URL returned HTTP `200` with discovery and wallet controls.
 - The local frontend now recognizes the pinned SDK's simplified StudioNet success receipt, scopes pending transaction recovery by chain/wallet/contract/method/hash, clears permanently failed finalized transactions and refreshes on account/network changes.
-- Connected-wallet QA was performed in the Convert Chrome profile with the injected Rabby EIP-1193 wallet: wallet connection and StudioNet `61999` status, live project discovery, project detail, frozen evidence, consensus classifications and anchors, reward allocations, honest `EMITTED_UNVERIFIED` transfer labeling, connected profile readback and creation-form state were verified. No new financial signature was requested during browser QA because the SDK lifecycle ledger already contains the necessary funded writes. Playwright remains desktop/mobile navigation and form smoke coverage, not a replacement for wallet signing evidence.
+- Connected-wallet QA was performed in the Convert Chrome profile with the injected Rabby EIP-1193 wallet. A real production create-and-fund write finalized at [`0x96f69cb434c0291a3b314b9d74e3f8204eec57c8888a7ac8807274eecaa20474`](https://explorer-studio.genlayer.com/tx/0x96f69cb434c0291a3b314b9d74e3f8204eec57c8888a7ac8807274eecaa20474), creating project `1` with `0.01 GEN`; refresh, reconnect, discovery and detail readback passed. Contributor wallet switching/signing was not available in this profile and is not claimed. Playwright remains desktop/mobile navigation and form smoke coverage, not a replacement for wallet signing evidence.
 
 ## Prior evidence
 

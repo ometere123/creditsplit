@@ -6,7 +6,7 @@ Creditsplit is a single-scope Social / Creator Rewards / Contributor Reputation 
 
 ## Status and honesty
 
-**Source-matched StudioNet deployment, evidence-based live lifecycles and a Vercel production deployment are verified.** The current contract is [`0x49a63512878c639C8205c7f0c32eeFa78E8aBF3f`](https://explorer-studio.genlayer.com/address/0x49a63512878c639C8205c7f0c32eeFa78E8aBF3f) on chain 61999. Deployment [`0x2016405aad3d64cec94db8065c02d647b9019d7f28d9d5dd0fe75b4f3fca435b`](https://explorer-studio.genlayer.com/tx/0x2016405aad3d64cec94db8065c02d647b9019d7f28d9d5dd0fe75b4f3fca435b) finalized `MAJORITY_AGREE` with successful leader execution; registered source bytes match `contracts/Creditsplit.py` SHA-256 `0AA8AACDDF5E65B72B60BFFC057F8393B46B586B7B60185C815CD1D50DDDCCAF`. The corrected live project accepted weights `[5,3,3]`, including a valuable packet omitted from assembler `source_refs`, and credited exact deterministic allocations. A second live project preserved informational merit while failing completion, then safely retried unchanged frozen evidence and refunded the full pool. No external documents or contribution sources were fetched. Connected-wallet read-only QA was completed in the Convert Chrome profile against the live project and transfer-state views; no redundant browser-funded project was created. This is not a 5/5/5/5 self-certification.
+**Source-matched StudioNet deployment, evidence-based live lifecycles and a Vercel production deployment are verified.** The current hardened contract is [`0x03EEC54406D220ce484002A1A493d73D09b7F57C`](https://explorer-studio.genlayer.com/address/0x03EEC54406D220ce484002A1A493d73D09b7F57C) on chain 61999. Deployment [`0x64f7f36cbc2eb8349e6e68850cc00bf839fecb7251c05941b1b67a62d95d405f`](https://explorer-studio.genlayer.com/tx/0x64f7f36cbc2eb8349e6e68850cc00bf839fecb7251c05941b1b67a62d95d405f) finalized `MAJORITY_AGREE` with successful leader execution; registered source bytes match `contracts/Creditsplit.py` SHA-256 `794231E47E0EF7873E6F14A4BBC9FC7B0D1CAF94A2C9BBDE9DBFD85A52612818`. The hardened source applies duplicate restrictions to cited packets only and rejects trivial evidence anchors. Historical full lifecycles remain preserved on prior source-matched deployments. A real Convert Chrome/Rabby browser write created project 1 with `0.01 GEN`; the project readback confirms the sponsor, three invitees and immutable criteria. No external documents or contribution sources were fetched. This is not a 5/5/5/5 self-certification.
 
 ## Locked environment
 
@@ -62,7 +62,7 @@ npm run dev
 
 The repository and frontend each have a committed npm lockfile. Direct Mode pins the compatible `v0.2.16` GenVM universal bundle because `genlayer-test==0.29.2` downloads the legacy `genvm-universal.tar.xz` asset. The linter uses the same explicit version and validates the pinned `py-genlayer` hash.
 
-Set `NEXT_PUBLIC_CONTRACT_ADDRESS=0x49a63512878c639C8205c7f0c32eeFa78E8aBF3f` for the verified StudioNet build. Deployment environment variables must contain **no private keys** in the frontend or Vercel configuration.
+Set `NEXT_PUBLIC_CONTRACT_ADDRESS=0x03EEC54406D220ce484002A1A493d73D09b7F57C` for the verified StudioNet build. Deployment environment variables must contain **no private keys** in the frontend or Vercel configuration.
 
 ## Essential deployment/verification gates
 

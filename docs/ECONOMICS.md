@@ -11,9 +11,9 @@
 - Protocol fees are distinct from the locked project pool and must be funded by initiating wallets. The browser passes the sponsor value separately from the SDK-estimated network fee.
 - Reputation `earned_wei` records contract allocations/dispatched amounts, not an independent proof of EOA receipt. The frontend labels this distinction.
 
-## Current live accounting evidence
+## Historical live accounting evidence from the prior settled deployment
 
-The current source-matched deployment is [`0x49a63512878c639C8205c7f0c32eeFa78E8aBF3f`](https://explorer-studio.genlayer.com/address/0x49a63512878c639C8205c7f0c32eeFa78E8aBF3f). Project 2 funded `90000000000000000` wei and finalized with weights `[5,3,3]` and amounts:
+The prior source-matched deployment is [`0x49a63512878c639C8205c7f0c32eeFa78E8aBF3f`](https://explorer-studio.genlayer.com/address/0x49a63512878c639C8205c7f0c32eeFa78E8aBF3f). Project 2 funded `90000000000000000` wei and finalized with weights `[5,3,3]` and amounts:
 
 ```text
 A 40909090909090910 wei
@@ -32,3 +32,7 @@ The parent evaluation is [`0xfa0f5ead76400df101bd1d2b4219312bde47c4d229eb4a3d150
 Project 1 was intentionally incomplete. After one failed consensus and one safe retry, the refund parent [`0x7704de27424830c93636906377615d8d8d207d10e9575222d9bc63ae07309078`](https://explorer-studio.genlayer.com/tx/0x7704de27424830c93636906377615d8d8d207d10e9575222d9bc63ae07309078) emitted refund child [`0x8bde4b39b0bd0387a6422a88b2893ca5e609829a6fbf6185f43c45bec267e4bd`](https://explorer-studio.genlayer.com/tx/0x8bde4b39b0bd0387a6422a88b2893ca5e609829a6fbf6185f43c45bec267e4bd) of `90000000000000000` wei to the sponsor with `value_credited=true`. Final readback after both projects was `active_escrow_wei=0` and `total_dispatched_wei=180000000000000000`.
 
 Historical deployment and settlement records remain in `docs/DEPLOYMENT.md`; they are not the current frontend target.
+
+## Current hardened deployment
+
+The current contract is [`0x03EEC54406D220ce484002A1A493d73D09b7F57C`](https://explorer-studio.genlayer.com/address/0x03EEC54406D220ce484002A1A493d73D09b7F57C). The Convert Chrome browser write created project `1` with `10000000000000000` wei (`0.01 GEN`). It is still `RECRUITING` with `0/3` joined, so no reward allocation or child payout exists yet. Its recruitment deadline and refund path remain governed by the production contract; no premature refund was broadcast.

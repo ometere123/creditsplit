@@ -37,4 +37,4 @@ Completion is independent of merit. If all three criteria are met and the final 
 
 ## Current deployment
 
-The verified current address is [`0x49a63512878c639C8205c7f0c32eeFa78E8aBF3f`](https://explorer-studio.genlayer.com/address/0x49a63512878c639C8205c7f0c32eeFa78E8aBF3f). Its source provenance and live transaction ledger are in [`docs/DEPLOYMENT.md`](DEPLOYMENT.md) and [`docs/REVIEW_EVIDENCE.md`](REVIEW_EVIDENCE.md).
+The verified current address is [`0x03EEC54406D220ce484002A1A493d73D09b7F57C`](https://explorer-studio.genlayer.com/address/0x03EEC54406D220ce484002A1A493d73D09b7F57C). Its source provenance and live transaction ledger are in [`docs/DEPLOYMENT.md`](DEPLOYMENT.md) and [`docs/REVIEW_EVIDENCE.md`](REVIEW_EVIDENCE.md). The previous address and its completed lifecycle remain historical evidence.
