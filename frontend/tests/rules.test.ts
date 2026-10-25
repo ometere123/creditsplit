@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {makeSubmittedTransaction,parseSubmittedTransaction,recoveryMatchesWallet} from '../lib/chain';
+import {makeSubmittedTransaction,parseSubmittedTransaction,recoveryMatchesWallet,submittedTransactionStorageKey} from '../lib/chain';
 import {parseGen,formatGen,bytes,validateCriteria,validateProjectInput} from '../lib/types';
 const a='0x'+'1'.repeat(40),b='0x'+'2'.repeat(40),c='0x'+'3'.repeat(40),s='0x'+'4'.repeat(40);
 describe('funding and input invariants',()=>{
@@ -15,8 +15,11 @@ describe('funding and input invariants',()=>{
 });
 describe('transaction recovery scope',()=>{
   it('round-trips a chain, wallet, contract and method scoped record',()=>{
-    const record=makeSubmittedTransaction('0x'+'a'.repeat(64),'0x'+'1'.repeat(40),'create_project',123);
+    const record={...makeSubmittedTransaction('0x'+'a'.repeat(64),'0x'+'1'.repeat(40),'create_project',123),contract:'0x'+'9'.repeat(40)};
     expect(parseSubmittedTransaction(JSON.stringify(record))).toEqual(record);
+    expect(submittedTransactionStorageKey(record)).toContain(':61999:');
+    expect(submittedTransactionStorageKey(record)).toContain(':create_project:');
+    expect(submittedTransactionStorageKey(record)).toContain(record.hash);
     expect(recoveryMatchesWallet(record,'0x'+'1'.repeat(40))).toBe(true);
     expect(recoveryMatchesWallet(record,'0x'+'2'.repeat(40))).toBe(false);
   });

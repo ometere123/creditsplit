@@ -8,11 +8,13 @@ import pytest
 from pathlib import Path
 
 ADDR = ['0x'+str(i)*40 for i in range(1,6)]
+ANCHORS = {'0:1': 'The', '1:1': 'Correction', '2:1': 'The'}
 
 
 def _assessment(slot, effect, refs=None, relevance="direct", distinct=True,
-                correctness=True, attribution_consistent=True, justification=None):
+                correctness=True, attribution_consistent=True, justification=None, anchors=None):
     refs = [f"{slot}:1"] if refs is None and effect != "none" else (refs or [])
+    anchors = ([ANCHORS[ref] for ref in refs] if anchors is None else anchors)
     return {
         "relevance": relevance if effect != "none" else "none",
         "distinct": distinct,
@@ -20,6 +22,7 @@ def _assessment(slot, effect, refs=None, relevance="direct", distinct=True,
         "material_effect": effect,
         "attribution_consistent": attribution_consistent,
         "evidence_ids": refs,
+        "evidence_anchors": anchors,
         "justification": justification or f"Registered passage for slot {slot} was assessed from its text.",
     }
 
@@ -232,16 +235,115 @@ def test_benign_explanation_and_reference_differences_are_allowed(fixture):
     assert json.loads(c.get_project(id))['weights'] == [5, 3, 1]
 
 
-def test_duplicate_work_cannot_receive_two_substantial_bands(fixture):
+def test_later_exact_duplicate_is_capped_without_denial_of_settlement(fixture):
     c, _ = fixture; id = fully_submitted(c)
     project = json.loads(c.get_project(id))
     project['packets'][1][0]['text'] = project['packets'][0][0]['text']
     c._save(id, project)
     project['evidence_digest'] = hashlib.sha256(c._evidence(project).encode('utf-8')).hexdigest()
     c._save(id, project)
+    duplicate_decision = _decision()
+    duplicate_decision['assessments'][1]['evidence_anchors'] = ['The']
+    FAKE.nondet.exec_prompt = lambda prompt, **kwargs: json.dumps(duplicate_decision)
+    c.evaluate_contributions(id)
+    settled = json.loads(c.get_project(id))
+    assert settled['status'] == 'SETTLEMENT_EMITTED'
+    assert settled['weights'] == [5, 1, 1]
+    assert sum(int(amount) for amount in settled['amounts_wei']) == 90
+    assert FAKE.transfers and FAKE.transfers[0][0] == ADDR[1]
+
+
+def test_assembler_omission_is_not_an_economic_veto(fixture):
+    c, _ = fixture; id = fully_submitted(c)
+    project = json.loads(c.get_project(id))
+    project['source_refs'] = ['0:1', '2:1']
+    c._save(id, project)
+    project['evidence_digest'] = hashlib.sha256(c._evidence(project).encode('utf-8')).hexdigest()
+    c._save(id, project)
+    c.evaluate_contributions(id)
+    settled = json.loads(c.get_project(id))
+    assert settled['weights'] == [5, 3, 1]
+    assert settled['amounts_wei'] == ['50', '30', '10']
+
+
+def test_substantial_paraphrase_and_shared_terms_are_not_exact_duplicates(fixture):
+    c, _ = fixture; id = fully_submitted(c)
+    project = json.loads(c.get_project(id))
+    project['packets'][1][0]['text'] = 'The threat model separates replayed attestations from reentrancy and maps the exploitable transition.'
+    c._save(id, project)
+    project['evidence_digest'] = hashlib.sha256(c._evidence(project).encode('utf-8')).hexdigest()
+    c._save(id, project)
+    paraphrase = _decision()
+    paraphrase['assessments'][1]['evidence_anchors'] = ['The']
+    FAKE.nondet.exec_prompt = lambda prompt, **kwargs: json.dumps(paraphrase)
+    c.evaluate_contributions(id)
+    assert json.loads(c.get_project(id))['weights'] == [5, 3, 1]
+
+
+def test_failed_completion_keeps_informational_merit_but_refunds(fixture):
+    c, _ = fixture; id = fully_submitted(c)
+    decision = _decision(
+        complete=False,
+        effects=('foundational', 'substantial', 'none'),
+        refs=[['0:1'], ['1:1'], []],
+        criteria_status=['met', 'partial', 'not_met'],
+    )
+    FAKE.nondet.exec_prompt = lambda prompt, **kwargs: json.dumps(decision)
+    c.evaluate_contributions(id)
+    settled = json.loads(c.get_project(id))
+    assert settled['status'] == 'REFUND_EMITTED'
+    assert settled['weights'] == [0, 0, 0]
+    assert settled['amounts_wei'] == ['0', '0', '0']
+    assert settled['decision']['informational_weights'] == [5, 3, 0]
+    assert FAKE.transfers == [(ADDR[0], 90)]
+
+
+def test_irrelevant_omitted_packet_does_not_gain_credit(fixture):
+    c, _ = fixture; id = fully_submitted(c)
+    project = json.loads(c.get_project(id))
+    project['source_refs'] = ['0:1', '2:1']
+    c._save(id, project)
+    project['evidence_digest'] = hashlib.sha256(c._evidence(project).encode('utf-8')).hexdigest()
+    c._save(id, project)
+    decision = _decision(effects=('foundational', 'none', 'supporting'), refs=[['0:1'], [], ['2:1']])
+    FAKE.nondet.exec_prompt = lambda prompt, **kwargs: json.dumps(decision)
+    c.evaluate_contributions(id)
+    assert json.loads(c.get_project(id))['weights'] == [5, 0, 1]
+
+
+def test_contradictory_complete_flag_is_rejected(fixture):
+    c, _ = fixture; id = fully_submitted(c)
+    contradictory = _decision(complete=False, criteria_status=['met', 'met', 'met'])
+    FAKE.nondet.exec_prompt = lambda prompt, **kwargs: json.dumps(contradictory)
     with pytest.raises(UserError):
         c.evaluate_contributions(id)
-    assert not FAKE.transfers and json.loads(c.get_project(id))['status'] == 'FROZEN'
+    assert json.loads(c.get_project(id))['status'] == 'FROZEN'
+
+
+def test_inconclusive_consensus_is_retryable_without_state_change(fixture):
+    c, _ = fixture; id = fully_submitted(c)
+    before = json.loads(c.get_project(id))
+    original = FAKE.vm.run_nondet_unsafe
+    FAKE.vm.run_nondet_unsafe = lambda leader, validator: (_ for _ in ()).throw(UserError('consensus unavailable'))
+    with pytest.raises(UserError, match='consensus unavailable'):
+        c.evaluate_contributions(id)
+    after_failure = json.loads(c.get_project(id))
+    assert after_failure['status'] == 'FROZEN'
+    assert after_failure['evidence_digest'] == before['evidence_digest']
+    assert c.active_escrow == 90 and not FAKE.transfers
+    FAKE.vm.run_nondet_unsafe = original
+    c.evaluate_contributions(id)
+    assert json.loads(c.get_project(id))['status'] == 'SETTLEMENT_EMITTED'
+
+
+def test_exact_packet_anchor_is_required_for_positive_merit(fixture):
+    c, _ = fixture; id = fully_submitted(c)
+    forged = _decision()
+    forged['assessments'][0]['evidence_anchors'] = ['not in packet']
+    FAKE.nondet.exec_prompt = lambda prompt, **kwargs: json.dumps(forged)
+    with pytest.raises(UserError):
+        c.evaluate_contributions(id)
+    assert json.loads(c.get_project(id))['status'] == 'FROZEN'
 
 
 def test_materiality_flags_are_payment_controlling_not_leader_weights(fixture):

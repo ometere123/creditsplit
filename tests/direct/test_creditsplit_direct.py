@@ -9,11 +9,13 @@ import pytest
 from datetime import datetime, timezone
 
 CONTRACT = "contracts/Creditsplit.py"
+ANCHORS = {'0:1': 'The', '1:1': 'Correction', '2:1': 'The'}
 
 
 def _assessment(slot, effect, refs=None, relevance="direct", distinct=True,
-                correctness=True, attribution_consistent=True):
+                correctness=True, attribution_consistent=True, anchors=None):
     refs = [f"{slot}:1"] if refs is None and effect != "none" else (refs or [])
+    anchors = ([ANCHORS[ref] for ref in refs] if anchors is None else anchors)
     return {
         "relevance": relevance if effect != "none" else "none",
         "distinct": distinct,
@@ -21,6 +23,7 @@ def _assessment(slot, effect, refs=None, relevance="direct", distinct=True,
         "material_effect": effect,
         "attribution_consistent": attribution_consistent,
         "evidence_ids": refs,
+        "evidence_anchors": anchors,
         "justification": f"Slot {slot} was assessed from the registered passage.",
     }
 
@@ -343,7 +346,7 @@ def test_direct_benign_validator_reference_selection_does_not_disagree(
     assert direct_vm.run_validator(leader_result=good) is True
 
 
-def test_direct_duplicate_substantive_passages_are_rejected(
+def test_direct_later_exact_duplicate_is_capped_without_denial(
     direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
 ):
     contract = direct_deploy(CONTRACT)
@@ -354,9 +357,63 @@ def test_direct_duplicate_substantive_passages_are_rejected(
     contract.projects[project_id] = json.dumps(project, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     project["evidence_digest"] = hashlib.sha256(contract._evidence(project).encode("utf-8")).hexdigest()
     contract.projects[project_id] = json.dumps(project, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    duplicate_decision = _decision()
+    duplicate_decision["assessments"][1]["evidence_anchors"] = ["The"]
+    direct_vm.mock_llm(r"EVIDENCE_DIGEST=.*", json.dumps(duplicate_decision, separators=(",", ":")))
+    contract.evaluate_contributions(project_id)
+    settled = json.loads(contract.get_project(project_id))
+    assert settled["status"] == "SETTLEMENT_EMITTED"
+    assert settled["weights"] == [5, 1, 1]
+
+
+def test_direct_assembler_omission_does_not_veto_substantial_credit(
+    direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
+):
+    contract = direct_deploy(CONTRACT)
+    contributors = [direct_bob, direct_charlie, direct_accounts[4]]
+    project_id = _fully_frozen(contract, direct_vm, direct_alice, contributors)
+    project = json.loads(contract.get_project(project_id))
+    project["source_refs"] = ["0:1", "2:1"]
+    contract.projects[project_id] = json.dumps(project, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    project["evidence_digest"] = hashlib.sha256(contract._evidence(project).encode("utf-8")).hexdigest()
+    contract.projects[project_id] = json.dumps(project, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     direct_vm.mock_llm(r"EVIDENCE_DIGEST=.*", _decision_json())
+    contract.evaluate_contributions(project_id)
+    assert json.loads(contract.get_project(project_id))["weights"] == [5, 3, 1]
+
+
+def test_direct_failed_completion_refunds_even_with_useful_work(
+    direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
+):
+    contract = direct_deploy(CONTRACT)
+    contributors = [direct_bob, direct_charlie, direct_accounts[4]]
+    project_id = _fully_frozen(contract, direct_vm, direct_alice, contributors)
+    failed = _decision_json(
+        complete=False,
+        effects=("foundational", "substantial", "none"),
+        refs=[["0:1"], ["1:1"], []],
+        criteria_status=["met", "partial", "not_met"],
+    )
+    direct_vm.mock_llm(r"EVIDENCE_DIGEST=.*", failed)
+    contract.evaluate_contributions(project_id)
+    project = json.loads(contract.get_project(project_id))
+    assert project["status"] == "REFUND_EMITTED"
+    assert project["weights"] == [0, 0, 0]
+    assert project["decision"]["informational_weights"] == [5, 3, 0]
+
+
+def test_direct_bounded_packet_anchor_is_verified(
+    direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
+):
+    contract = direct_deploy(CONTRACT)
+    contributors = [direct_bob, direct_charlie, direct_accounts[4]]
+    project_id = _fully_frozen(contract, direct_vm, direct_alice, contributors)
+    forged = _decision()
+    forged["assessments"][0]["evidence_anchors"] = ["not in packet"]
+    direct_vm.mock_llm(r"EVIDENCE_DIGEST=.*", json.dumps(forged, separators=(",", ":")))
     with direct_vm.expect_revert("invalid validator-agreed judgment"):
         contract.evaluate_contributions(project_id)
+    assert json.loads(contract.get_project(project_id))["status"] == "FROZEN"
 
 
 def test_direct_custom_acceptance_criteria_are_immutable_project_evidence(

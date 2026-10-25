@@ -8,6 +8,7 @@ export const RPC_URL = 'https://studio.genlayer.com/api';
 export const EXPLORER = 'https://explorer-studio.genlayer.com';
 export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ?? '';
 export const configured = /^0x[a-fA-F0-9]{40}$/.test(CONTRACT_ADDRESS);
+const SUBMITTED_TX_PREFIX = 'creditsplit:submitted-tx:';
 export const SUBMITTED_TX_KEY = 'creditsplit:submitted-tx';
 function asHash(value:string): Hash {
   if(!/^0x[a-fA-F0-9]{64}$/.test(value)) throw new Error(`Invalid transaction hash: ${value}`);
@@ -32,11 +33,12 @@ export function parseSubmittedTransaction(raw:string|null):SubmittedTransaction|
   if(!raw) return null;
   try {
     const parsed=JSON.parse(raw) as Partial<SubmittedTransaction>;
+    const contract=parsed.contract;
     if(typeof parsed.hash==='string' && /^0x[a-fA-F0-9]{64}$/.test(parsed.hash) &&
        parsed.chainId===NETWORK_ID && typeof parsed.wallet==='string' &&
-       typeof parsed.contract==='string' && typeof parsed.method==='string' &&
+       typeof contract==='string' && /^0x[a-fA-F0-9]{40}$/.test(contract) && typeof parsed.method==='string' &&
        typeof parsed.submittedAt==='number') {
-      return {...parsed,hash:parsed.hash,wallet:parsed.wallet.toLowerCase(),contract:parsed.contract.toLowerCase()} as SubmittedTransaction;
+      return {...parsed,hash:parsed.hash,wallet:parsed.wallet.toLowerCase(),contract:contract.toLowerCase()} as SubmittedTransaction;
     }
   } catch { /* A legacy or corrupt record is handled below. */ }
   if(/^0x[a-fA-F0-9]{64}$/.test(raw)) {
@@ -45,10 +47,44 @@ export function parseSubmittedTransaction(raw:string|null):SubmittedTransaction|
   return null;
 }
 
+export function submittedTransactionStorageKey(record:SubmittedTransaction):string {
+  return `${SUBMITTED_TX_PREFIX}${record.chainId}:${record.wallet.toLowerCase()}:${record.contract.toLowerCase()}:${encodeURIComponent(record.method)}:${record.hash.toLowerCase()}`;
+}
+
+export function readSubmittedTransactions():SubmittedTransaction[] {
+  if(typeof window==='undefined') return [];
+  const records:SubmittedTransaction[]=[];
+  const seen=new Set<string>();
+  const add=(raw:string|null)=>{
+    const record=parseSubmittedTransaction(raw);
+    if(record&&!seen.has(record.hash.toLowerCase())){seen.add(record.hash.toLowerCase());records.push(record);}
+  };
+  add(window.localStorage.getItem(SUBMITTED_TX_KEY));
+  for(let index=0;index<window.localStorage.length;index++){
+    const key=window.localStorage.key(index);
+    if(key?.startsWith(SUBMITTED_TX_PREFIX)) add(window.localStorage.getItem(key));
+  }
+  return records;
+}
+
+export function rememberSubmittedTransaction(record:SubmittedTransaction):void {
+  if(typeof window==='undefined') return;
+  window.localStorage.setItem(submittedTransactionStorageKey(record),JSON.stringify(record));
+  const legacy=parseSubmittedTransaction(window.localStorage.getItem(SUBMITTED_TX_KEY));
+  if(legacy?.hash.toLowerCase()===record.hash.toLowerCase()) window.localStorage.removeItem(SUBMITTED_TX_KEY);
+}
+
+export function forgetSubmittedTransaction(record:SubmittedTransaction):void {
+  if(typeof window==='undefined') return;
+  window.localStorage.removeItem(submittedTransactionStorageKey(record));
+  const legacy=parseSubmittedTransaction(window.localStorage.getItem(SUBMITTED_TX_KEY));
+  if(legacy?.hash.toLowerCase()===record.hash.toLowerCase()) window.localStorage.removeItem(SUBMITTED_TX_KEY);
+}
+
 export function recoveryMatchesWallet(record:SubmittedTransaction|null,wallet:string):boolean {
   if(!record) return false;
   if(record.legacy) return true;
-  return record.chainId===NETWORK_ID && record.contract===CONTRACT_ADDRESS.toLowerCase() && record.wallet===wallet.toLowerCase();
+  return record.chainId===NETWORK_ID && (!configured || record.contract===CONTRACT_ADDRESS.toLowerCase()) && record.wallet===wallet.toLowerCase();
 }
 
 export function isFinalizedExecutionFailure(error:unknown):boolean {
@@ -105,6 +141,9 @@ export async function writeAndConfirm(method:string,args:unknown[],value:bigint,
   const live = await connectWallet();
   if(live.toLowerCase()!==wallet.toLowerCase()) throw new Error('Wallet changed; reconnect before signing.');
   const client = createClient({chain:studionet,account:wallet as `0x${string}`,provider:window.ethereum});
+  // genlayer-js@1.1.8 builds the consensus-contract transaction, estimates gas,
+  // and supplies the wallet-selected gas price before requesting the signature.
+  // Keep the sponsor value separate from network fee selection.
   const call={address:CONTRACT_ADDRESS as `0x${string}`,functionName:method,args:args as CalldataEncodable[],value};
   const hash=await client.writeContract(call);
   onHash(String(hash));

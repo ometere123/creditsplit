@@ -34,7 +34,17 @@ Use exactly these bounded values:
 - distinct, correctness, attribution_consistent: true or false
 - material_effect: "foundational", "substantial", "supporting" or "none"
 - evidence_ids: zero or more registered packet IDs, at most four per slot
+- evidence_anchors: one exact short packet-text excerpt for each evidence ID,
+  in the same order; at most 140 UTF-8 bytes each
 - justification: at most 400 UTF-8 bytes
+
+Every positive assessment must cite the contributor's own registered packet and
+quote an exact bounded excerpt from every cited packet. An authentic packet ID
+alone is not proof that the cited passage is relevant. The assembler's source
+reference list is an attribution claim that validators inspect; it is not an
+economic veto over a packet that the independent assessment finds materially
+valuable. If the final deliverable fails a criterion, retain honest contribution
+observations but do not create a payout.
 
 Do not output weights or payment amounts. The contract derives weights from the assessment:
 invalid relevance/correctness/attribution or no qualifying evidence -> 0;
@@ -46,7 +56,8 @@ Return ONE JSON object only with exactly this shape:
 {"complete":boolean,"criteria_status":["met|partial|not_met","met|partial|not_met","met|partial|not_met"],
 "assessments":[{"relevance":"direct|supporting|none","distinct":boolean,"correctness":boolean,
 "material_effect":"foundational|substantial|supporting|none","attribution_consistent":boolean,
-"evidence_ids":["slot:revision"],"justification":"..."}, ... exactly 3],
+"evidence_ids":["slot:revision"],"evidence_anchors":["exact packet excerpt"],
+"justification":"..."}, ... exactly 3],
 "reason":"max 600 UTF-8 bytes"}
 If the deliverable is not materially complete, return complete=false and criteria_status containing not_met;
 the contract will force every payment weight to zero. Do not infer identity or originality beyond registered
@@ -67,6 +78,45 @@ EVIDENCE_DIGEST=""" + digest + "\nEVIDENCE_JSON=" + evidence
             return parsed
     raise gl.vm.UserError("[LLM_ERROR] response must be a JSON object")
 
+def _normalize_packet_text(value: str) -> str:
+    return " ".join(str(value).split()).casefold()
+
+
+def _packet_sequence(packet, fallback: int) -> int:
+    try:
+        sequence = int(packet.get("sequence", 0))
+    except Exception:
+        sequence = 0
+    return sequence if sequence > 0 else fallback
+
+
+def _has_prior_exact_duplicate(project, slot: int) -> bool:
+    """Return true when this slot contains an exact packet copied from an earlier slot.
+
+    Packet sequence is assigned by the contract at registration time. The slot
+    tie-breaker is only a compatibility fallback for legacy records without a
+    sequence field; it is never a real-world authorship claim.
+    """
+    ordered = []
+    fallback = 0
+    for packet_group_slot in range(3):
+        for packet in project["packets"][packet_group_slot]:
+            fallback += 1
+            ordered.append((packet_group_slot, packet, _packet_sequence(packet, fallback)))
+    for current_slot, current, current_sequence in ordered:
+        if current_slot != slot:
+            continue
+        current_text = _normalize_packet_text(current["text"])
+        if not current_text:
+            continue
+        for other_slot, other, other_sequence in ordered:
+            if (other_slot != slot and _normalize_packet_text(other["text"]) == current_text and
+                    (other_sequence, other_slot, str(other["id"])) <
+                    (current_sequence, current_slot, str(current["id"]))):
+                return True
+    return False
+
+
 def _assessment_weight(assessment, project, slot: int) -> int:
     if assessment["relevance"] == "none" or not assessment["correctness"] or not assessment["attribution_consistent"]:
         return 0
@@ -75,10 +125,14 @@ def _assessment_weight(assessment, project, slot: int) -> int:
     if not assessment["distinct"] or assessment["material_effect"] == "supporting":
         return 1
     if assessment["material_effect"] == "substantial":
-        return 3
-    if assessment["material_effect"] == "foundational":
-        return 5
-    return 0
+        weight = 3
+    elif assessment["material_effect"] == "foundational":
+        weight = 5
+    else:
+        return 0
+    # Exact later copies cannot earn substantial or foundational credit. The
+    # original registered slot remains assessable and settlement can proceed.
+    return 1 if _has_prior_exact_duplicate(project, slot) else weight
 
 
 def _decision_weights(result, project):
@@ -102,20 +156,20 @@ def _valid_decision(result, project) -> bool:
             any(value not in ("met", "partial", "not_met") for value in criteria_status) or
             not isinstance(assessments, list) or len(assessments) != 3):
         return False
-    if not isinstance(result.get("reason"), str) or len(result["reason"].encode("utf-8")) > 600:
+    if (not isinstance(result.get("reason"), str) or not result["reason"] or
+            len(result["reason"].encode("utf-8")) > 600):
         return False
     if result["complete"] and (not project["final_text"] or any(value != "met" for value in criteria_status)):
         return False
     if not result["complete"] and all(value == "met" for value in criteria_status):
         return False
     known = {packet["id"]: packet for packets in project["packets"] for packet in packets}
-    source_refs = set(project["source_refs"])
     weights = []
     for slot in range(3):
         assessment = assessments[slot]
         if not isinstance(assessment, dict) or set(assessment.keys()) != {
             "relevance", "distinct", "correctness", "material_effect", "attribution_consistent",
-            "evidence_ids", "justification"
+            "evidence_ids", "evidence_anchors", "justification"
         }:
             return False
         if (assessment["relevance"] not in ("direct", "supporting", "none") or
@@ -126,29 +180,27 @@ def _valid_decision(result, project) -> bool:
                 len(assessment["justification"].encode("utf-8")) > 400):
             return False
         refs = assessment["evidence_ids"]
-        if not isinstance(refs, list) or len(refs) > 4 or len(set(str(r) for r in refs)) != len(refs):
+        anchors = assessment["evidence_anchors"]
+        if (not isinstance(refs, list) or len(refs) > 4 or len(set(str(r) for r in refs)) != len(refs) or
+                not isinstance(anchors, list) or len(anchors) != len(refs)):
             return False
         if any(type(ref) is not str or ref not in known for ref in refs):
             return False
+        for index, ref in enumerate(refs):
+            anchor = anchors[index]
+            if (not isinstance(anchor, str) or not anchor or
+                    len(anchor.encode("utf-8")) > 140 or
+                    _normalize_packet_text(anchor) not in _normalize_packet_text(known[ref]["text"])):
+                return False
         weight = _assessment_weight(assessment, project, slot)
         weights.append(weight)
         if weight > 0 and not refs:
             return False
         if weight > 0 and not any(ref.startswith(f"{slot}:") for ref in refs):
             return False
-        if weight >= 3 and not any(ref in source_refs for ref in refs):
-            return False
-    # Exact duplicate packet text cannot be paid as two distinct substantial contributions.
-    normalized = []
-    for packets in project["packets"]:
-        normalized.append({" ".join(packet["text"].split()).casefold() for packet in packets})
-    for left in range(3):
-        for right in range(left + 1, 3):
-            if normalized[left].intersection(normalized[right]) and weights[left] > 1 and weights[right] > 1:
-                return False
+    # Positive informational merit is valid even when the collective deliverable
+    # fails. Settlement below deterministically converts it to zero payout.
     if result["complete"] and sum(weights) == 0:
-        return False
-    if not result["complete"] and weights != [0, 0, 0]:
         return False
     return True
 
@@ -267,6 +319,7 @@ class Creditsplit(gl.Contract):
             "contributors": addresses, "assembler_slot": int(assembler_slot),
             "joined": [False, False, False], "complete": [False, False, False],
             "packets": [[], [], []], "final_text": "", "source_refs": [],
+            "next_packet_sequence": 1,
             "responses": ["", "", ""], "acknowledged": [False, False, False],
             "pool_wei": str(int(pool)), "created_at": now, "recruit_due": now + 172800,
             "contribute_due": 0, "assemble_due": 0, "review_due": 0,
@@ -320,8 +373,12 @@ class Creditsplit(gl.Contract):
         self._require(all(isinstance(ref, str) and ref in known for ref in references),
                       "unregistered packet reference")
         number = len(packets) + 1
+        sequence = int(project.get("next_packet_sequence", len(known) + 1))
+        self._require(sequence > 0, "packet sequence exhausted")
+        project["next_packet_sequence"] = sequence + 1
         packets.append({"id": f"{slot}:{number}", "text": content, "at": self._now(),
-                        "revision_of": f"{slot}:1" if number == 2 else "", "references": references})
+                        "revision_of": f"{slot}:1" if number == 2 else "", "references": references,
+                        "sequence": sequence})
         self._save(project_id, project)
 
     @gl.public.write
@@ -469,11 +526,14 @@ class Creditsplit(gl.Contract):
             recipients = []
         project["completion"] = result["complete"]
         project["criteria_status"] = result["criteria_status"]
-        project["weights"] = weights
+        informational_weights = _decision_weights(result, project)
+        project["weights"] = informational_weights if result["complete"] else [0, 0, 0]
         project["amounts_wei"] = [str(x) for x in amounts]
         project["decision"] = {
+            "complete": result["complete"],
             "criteria_status": result["criteria_status"],
             "assessments": result["assessments"],
+            "informational_weights": informational_weights,
             "reason": result["reason"],
         }
         project["status"] = "SETTLEMENT_EMITTED" if result["complete"] else "REFUND_EMITTED"

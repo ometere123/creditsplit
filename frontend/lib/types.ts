@@ -9,9 +9,10 @@ export type Assessment = {
   material_effect: MaterialEffect;
   attribution_consistent: boolean;
   evidence_ids: string[];
+  evidence_anchors: string[];
   justification: string;
 };
-export type Decision = { criteria_status: CriterionStatus[]; assessments: Assessment[]; reason: string };
+export type Decision = { complete: boolean; criteria_status: CriterionStatus[]; assessments: Assessment[]; informational_weights: number[]; reason: string };
 export type Project = {
   id: number; title: string; brief: string; criteria: string[]; sponsor: string; contributors: string[];
   assembler_slot: number; joined: boolean[]; complete: boolean[];
