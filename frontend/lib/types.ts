@@ -7,12 +7,13 @@ export type Assessment = {
   distinct: boolean;
   correctness: boolean;
   material_effect: MaterialEffect;
+  factual_status: 'supported'|'contradicted'|'unverifiable'|'not_applicable';
   attribution_consistent: boolean;
   evidence_ids: string[];
   evidence_anchors: string[];
   justification: string;
 };
-export type Decision = { complete: boolean; criteria_status: CriterionStatus[]; assessments: Assessment[]; informational_weights: number[]; reason: string };
+export type Decision = { complete: boolean; criteria_status: CriterionStatus[]; source_status: 'verified'|'not_used'; source_digest: string; assessments: Assessment[]; informational_weights: number[]; reason: string };
 export type Project = {
   id: number; title: string; brief: string; criteria: string[]; sponsor: string; contributors: string[];
   assembler_slot: number; joined: boolean[]; complete: boolean[];
@@ -20,6 +21,7 @@ export type Project = {
   responses: string[]; acknowledged: boolean[]; pool_wei: string; created_at: number;
   recruit_due: number; contribute_due: number; assemble_due: number; review_due: number;
   frozen_at: number; evidence_digest: string; fallback_assembly: boolean;
+  verified_source_url?: string; verified_source_digest?: string; verified_source_status?: 'PENDING'|'VERIFIED'|'NOT_CONFIGURED'|'NOT_USED';
   status: Status; completion: null|boolean; criteria_status: CriterionStatus[]; weights: number[]; amounts_wei: string[];
   decision: Decision|null;
   settlement: string; settlement_at: number;
@@ -58,5 +60,16 @@ export function validateProjectInput(title: string, brief: string, addresses: st
 export function validateCriteria(criteria: string[]): void {
   if(criteria.length!==3||criteria.some(value=>bytes(value)===0||bytes(value)>360)) {
     throw new Error('Add exactly three non-empty acceptance criteria, each no more than 360 UTF-8 bytes.');
+  }
+}
+export function validateVerifiedSource(url: string, digest: string): void {
+  if (!url && !digest) return;
+  const parts=url.split('/');
+  const commit=parts[5] ?? '';
+  const path=parts.slice(6).join('/');
+  if (!url.startsWith('https://raw.githubusercontent.com/') || parts.length<7 ||
+      !/^[a-fA-F0-9]{40}$/.test(commit) || !path || path.includes('..') ||
+      !/\.(md|txt|json|csv)$/i.test(path) || !/^[a-fA-F0-9]{64}$/.test(digest)) {
+    throw new Error('Verified source must be a raw GitHub text/JSON file pinned to a 40-character commit SHA with its 64-character SHA-256 digest.');
   }
 }

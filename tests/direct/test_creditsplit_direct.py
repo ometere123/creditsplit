@@ -9,6 +9,9 @@ import pytest
 from datetime import datetime, timezone
 
 CONTRACT = "contracts/Creditsplit.py"
+SOURCE_URL = "https://raw.githubusercontent.com/ometere123/creditsplit/" + "a" * 40 + "/docs/CONSENSUS.md"
+SOURCE_BODY = "GenLayer consensus validates registered work against a frozen reference."
+SOURCE_DIGEST = hashlib.sha256(SOURCE_BODY.encode("utf-8")).hexdigest()
 ANCHORS = {
     '0:1': 'threat model distinguishes replayed attestations',
     '1:1': 'review must reject stale packet references',
@@ -18,7 +21,7 @@ ANCHORS = {
 
 
 def _assessment(slot, effect, refs=None, relevance="direct", distinct=True,
-                correctness=True, attribution_consistent=True, anchors=None):
+                correctness=True, attribution_consistent=True, factual_status="not_applicable", anchors=None):
     refs = [f"{slot}:1"] if refs is None and effect != "none" else (refs or [])
     anchors = ([ANCHORS[ref] for ref in refs] if anchors is None else anchors)
     return {
@@ -26,6 +29,7 @@ def _assessment(slot, effect, refs=None, relevance="direct", distinct=True,
         "distinct": distinct,
         "correctness": correctness,
         "material_effect": effect,
+        "factual_status": factual_status,
         "attribution_consistent": attribution_consistent,
         "evidence_ids": refs,
         "evidence_anchors": anchors,
@@ -34,12 +38,15 @@ def _assessment(slot, effect, refs=None, relevance="direct", distinct=True,
 
 
 def _decision(effects=("foundational", "substantial", "supporting"), complete=True,
-             refs=None, criteria_status=None):
+              refs=None, criteria_status=None, source_status="not_used", source_digest="",
+              factual_status="not_applicable"):
     refs = refs or [["0:1"], ["1:1"], ["2:1"]]
     return {
         "complete": complete,
         "criteria_status": criteria_status or (["met", "met", "met"] if complete else ["not_met", "partial", "not_met"]),
-        "assessments": [_assessment(slot, effects[slot], refs=refs[slot]) for slot in range(3)],
+        "source_status": source_status,
+        "source_digest": source_digest,
+        "assessments": [_assessment(slot, effects[slot], refs=refs[slot], factual_status=factual_status) for slot in range(3)],
         "reason": "Frozen passages were assessed against the registered criteria.",
     }
 
@@ -58,6 +65,20 @@ def _create(contract, direct_vm, sponsor, contributors, value=90, assembler_slot
     return contract.create_project(
         "Technical report",
         "Build a technical report from attributable evidence",
+        *(_hex_address(address) for address in contributors),
+        assembler_slot,
+    )
+
+
+def _create_verified(contract, direct_vm, sponsor, contributors, value=90, assembler_slot=0):
+    direct_vm.sender = sponsor
+    direct_vm.value = value
+    return contract.create_project_with_verified_source(
+        "Verified technical report",
+        "Build a report against a frozen public reference.",
+        '["State the verified fact.","Provide an attributable correction.","Integrate the supported result."]',
+        SOURCE_URL,
+        SOURCE_DIGEST,
         *(_hex_address(address) for address in contributors),
         assembler_slot,
     )
@@ -89,6 +110,31 @@ def _fully_frozen(contract, direct_vm, sponsor, contributors):
     contract.submit_final_artifact(
         project_id,
         "A complete remediation guide grounded in the threat model, the stale-reference correction and the integrated editorial passage.",
+        '["0:1","1:1","2:1"]',
+    )
+    for address in contributors:
+        direct_vm.sender = address
+        contract.respond_attribution(project_id, "I confirm the frozen attribution.")
+    direct_vm.sender = sponsor
+    contract.freeze_project(project_id)
+    return project_id
+
+
+def _fully_frozen_verified(contract, direct_vm, sponsor, contributors):
+    project_id = _create_verified(contract, direct_vm, sponsor, contributors)
+    _join_all(contract, direct_vm, contributors, project_id)
+    for index, address in enumerate(contributors):
+        direct_vm.sender = address
+        contract.submit_contribution(project_id, [
+            "The threat model distinguishes replayed attestations from reentrancy and explains the exploitable state transition.",
+            "Correction: the review must reject stale packet references and preserve the contributor slot from the signed wallet.",
+            "The integration section turns the two technical passages into a concise, attributed remediation guide.",
+        ][index])
+        contract.finish_contributing(project_id)
+    direct_vm.sender = contributors[0]
+    contract.submit_final_artifact(
+        project_id,
+        "A complete remediation guide grounded in the verified fact, the stale-reference correction and the integrated editorial passage.",
         '["0:1","1:1","2:1"]',
     )
     for address in contributors:
@@ -503,3 +549,50 @@ def test_direct_custom_acceptance_criteria_are_immutable_project_evidence(
     )
     project = json.loads(contract.get_project(project_id))
     assert project["criteria"] == ["Identify the defect.", "Give a reproducible correction.", "Integrate and attribute the result."]
+
+
+def test_direct_verified_source_is_independently_fetched_and_hash_bound(
+    direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
+):
+    contract = direct_deploy(CONTRACT)
+    contributors = [direct_bob, direct_charlie, direct_accounts[4]]
+    project_id = _fully_frozen_verified(contract, direct_vm, direct_alice, contributors)
+    direct_vm.mock_web(SOURCE_URL, {"method": "GET", "status": 200, "body": SOURCE_BODY})
+    direct_vm.mock_llm(
+        r"EVIDENCE_DIGEST=.*",
+        _decision_json(source_status="verified", source_digest=SOURCE_DIGEST, factual_status="supported"),
+    )
+    contract.evaluate_contributions(project_id)
+    project = json.loads(contract.get_project(project_id))
+    assert project["verified_source_status"] == "VERIFIED"
+    assert project["decision"]["source_digest"] == SOURCE_DIGEST
+    assert project["weights"] == [5, 3, 1]
+
+
+def test_direct_verified_source_digest_mismatch_fails_closed(
+    direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
+):
+    contract = direct_deploy(CONTRACT)
+    contributors = [direct_bob, direct_charlie, direct_accounts[4]]
+    project_id = _fully_frozen_verified(contract, direct_vm, direct_alice, contributors)
+    direct_vm.mock_web(SOURCE_URL, {"method": "GET", "status": 200, "body": "substituted reference"})
+    with direct_vm.expect_revert("verified source unavailable"):
+        contract.evaluate_contributions(project_id)
+    project = json.loads(contract.get_project(project_id))
+    assert project["status"] == "FROZEN"
+    assert int(contract.active_escrow) == 90
+
+
+def test_direct_verified_source_contradicted_high_classification_is_rejected(
+    direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
+):
+    contract = direct_deploy(CONTRACT)
+    contributors = [direct_bob, direct_charlie, direct_accounts[4]]
+    project_id = _fully_frozen_verified(contract, direct_vm, direct_alice, contributors)
+    direct_vm.mock_web(SOURCE_URL, {"method": "GET", "status": 200, "body": SOURCE_BODY})
+    decision = _decision(source_status="verified", source_digest=SOURCE_DIGEST, factual_status="supported")
+    decision["assessments"][0]["factual_status"] = "contradicted"
+    direct_vm.mock_llm(r"EVIDENCE_DIGEST=.*", json.dumps(decision, separators=(",", ":")))
+    with direct_vm.expect_revert("invalid validator-agreed judgment"):
+        contract.evaluate_contributions(project_id)
+    assert json.loads(contract.get_project(project_id))["status"] == "FROZEN"

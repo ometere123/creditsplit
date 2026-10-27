@@ -8,6 +8,9 @@ import pytest
 from pathlib import Path
 
 ADDR = ['0x'+str(i)*40 for i in range(1,6)]
+SOURCE_URL = 'https://raw.githubusercontent.com/ometere123/creditsplit/' + 'a'*40 + '/docs/CONSENSUS.md'
+SOURCE_BODY = b'GenLayer consensus validates registered work against a frozen reference.'
+SOURCE_DIGEST = hashlib.sha256(SOURCE_BODY).hexdigest()
 ANCHORS = {
     '0:1': 'threat model separates replayed attestations',
     '1:1': 'packet references must bind to the signed contributor slot',
@@ -17,7 +20,8 @@ ANCHORS = {
 
 
 def _assessment(slot, effect, refs=None, relevance="direct", distinct=True,
-                correctness=True, attribution_consistent=True, justification=None, anchors=None):
+                correctness=True, attribution_consistent=True, factual_status="not_applicable",
+                justification=None, anchors=None):
     refs = [f"{slot}:1"] if refs is None and effect != "none" else (refs or [])
     anchors = ([ANCHORS[ref] for ref in refs] if anchors is None else anchors)
     return {
@@ -25,6 +29,7 @@ def _assessment(slot, effect, refs=None, relevance="direct", distinct=True,
         "distinct": distinct,
         "correctness": correctness,
         "material_effect": effect,
+        "factual_status": factual_status,
         "attribution_consistent": attribution_consistent,
         "evidence_ids": refs,
         "evidence_anchors": anchors,
@@ -38,6 +43,8 @@ def _decision(effects=("foundational", "substantial", "supporting"), complete=Tr
     return {
         "complete": complete,
         "criteria_status": criteria_status or (["met", "met", "met"] if complete else ["not_met", "partial", "not_met"]),
+        "source_status": "not_used",
+        "source_digest": "",
         "assessments": [_assessment(slot, effects[slot], refs=refs[slot]) for slot in range(3)],
         "reason": "The frozen passages and final artifact were assessed against the registered criteria.",
     }
@@ -68,19 +75,29 @@ class FakeRecipient:
         if on != 'finalized': raise AssertionError('transfers must finalize')
         FAKE.transfers.append((self.address,int(value)))
 
+class FakeWeb:
+    def get(self, url):
+        if FAKE.web_body is None:
+            raise RuntimeError('source unavailable')
+        return types.SimpleNamespace(status=FAKE.web_status, body=FAKE.web_body)
+
+
 FAKE = types.SimpleNamespace(
     Contract=object,
     vm=types.SimpleNamespace(UserError=UserError,Return=Return),
     message=types.SimpleNamespace(sender_address=ADDR[0],value=0),
     public=types.SimpleNamespace(write=FakeWrite(),view=lambda method:method),
     evm=types.SimpleNamespace(contract_interface=lambda cls:cls),
-    nondet=types.SimpleNamespace(exec_prompt=lambda prompt, **kwargs: '{}'),
+    nondet=types.SimpleNamespace(exec_prompt=lambda prompt, **kwargs: '{}', web=FakeWeb()),
     transfers=[],
+    web_status=200,
+    web_body=None,
 )
 
 def load_contract():
     global FAKE
     FAKE.transfers.clear();FAKE.message.sender_address=ADDR[0];FAKE.message.value=0
+    FAKE.web_status=200;FAKE.web_body=None
     module=types.ModuleType('genlayer')
     module.__dict__.update(gl=FAKE,TreeMap=Map,u256=int,u32=int,u8=int,Address=Address)
     sys.modules['genlayer']=module
@@ -111,6 +128,15 @@ def create(chain,value=90):
     acting(ADDR[0],value)
     return chain.create_project('Technical report','Build a technical report',ADDR[1],ADDR[2],ADDR[3],0)
 
+
+def create_verified(chain, value=90):
+    acting(ADDR[0], value)
+    return chain.create_project_with_verified_source(
+        'Verified technical report', 'Build a report against a frozen public reference.',
+        '["State the verified fact.","Provide an attributable correction.","Integrate the supported result."]',
+        SOURCE_URL, SOURCE_DIGEST, ADDR[1], ADDR[2], ADDR[3], 0,
+    )
+
 def recruited(chain):
     id=create(chain)
     for a in ADDR[1:4]:acting(a);chain.join_project(id)
@@ -127,6 +153,26 @@ def fully_submitted(chain):
     acting(ADDR[1]);chain.submit_final_artifact(id,'A complete remediation note grounded in the threat model, correction and integrated editorial passage.','["0:1","1:1","2:1"]')
     for a in ADDR[1:4]:acting(a);chain.respond_attribution(id,'')
     acting(ADDR[0]);chain.freeze_project(id)
+    return id
+
+
+def fully_submitted_verified(chain):
+    id = create_verified(chain)
+    for a in ADDR[1:4]:
+        acting(a); chain.join_project(id)
+    for i, a in enumerate(ADDR[1:4]):
+        acting(a); chain.submit_contribution(id, [
+            'The threat model separates replayed attestations from reentrancy and identifies the vulnerable state transition.',
+            'Correction: packet references must bind to the signed contributor slot and reject stale evidence.',
+            'The editorial passage integrates the threat model and correction into an attributed remediation note.',
+        ][i]); chain.finish_contributing(id)
+    acting(ADDR[1]); chain.submit_final_artifact(
+        id,
+        'A complete remediation note grounded in the verified fact, correction and integrated editorial passage.',
+        '["0:1","1:1","2:1"]',
+    )
+    for a in ADDR[1:4]: acting(a); chain.respond_attribution(id, '')
+    acting(ADDR[0]); chain.freeze_project(id)
     return id
 
 @pytest.fixture
@@ -495,3 +541,73 @@ def test_project_list_page(fixture):
     c,_=fixture;create(c);create(c,20)
     assert len(json.loads(c.list_projects(1,2)))==2
     with pytest.raises(UserError):c.list_projects(1,21)
+
+
+def test_verified_source_requires_commit_pinned_url_and_digest(fixture):
+    c, _ = fixture
+    acting(ADDR[0], 20)
+    with pytest.raises(UserError):
+        c.create_project_with_verified_source(
+            'Title', 'Brief', '["one","two","three"]',
+            'https://example.com/reference.md', SOURCE_DIGEST,
+            ADDR[1], ADDR[2], ADDR[3], 0,
+        )
+    with pytest.raises(UserError):
+        c.create_project_with_verified_source(
+            'Title', 'Brief', '["one","two","three"]',
+            SOURCE_URL, '0' * 63,
+            ADDR[1], ADDR[2], ADDR[3], 0,
+        )
+
+
+def test_verified_source_is_fetched_by_the_assessment_and_recorded(fixture):
+    c, _ = fixture
+    FAKE.web_body = SOURCE_BODY
+    project_id = fully_submitted_verified(c)
+    decision = _decision()
+    decision['source_status'] = 'verified'
+    decision['source_digest'] = SOURCE_DIGEST
+    for assessment in decision['assessments']:
+        assessment['factual_status'] = 'supported'
+    FAKE.nondet.exec_prompt = lambda prompt, **kwargs: json.dumps(decision)
+    c.evaluate_contributions(project_id)
+    project = json.loads(c.get_project(project_id))
+    assert project['verified_source_status'] == 'VERIFIED'
+    assert project['decision']['source_status'] == 'verified'
+    assert project['decision']['source_digest'] == SOURCE_DIGEST
+    assert project['weights'] == [5, 3, 1]
+
+
+def test_verified_source_substitution_or_unavailability_fails_closed(fixture):
+    c, _ = fixture
+    project_id = fully_submitted_verified(c)
+    FAKE.web_body = b'substituted reference'
+    with pytest.raises(UserError, match=r'\[EXTERNAL\]'):
+        c.evaluate_contributions(project_id)
+    project = json.loads(c.get_project(project_id))
+    assert project['status'] == 'FROZEN' and c.active_escrow == 90 and not FAKE.transfers
+
+
+def test_verified_source_contradicted_high_credit_cannot_settle(fixture):
+    c, _ = fixture
+    FAKE.web_body = SOURCE_BODY
+    project_id = fully_submitted_verified(c)
+    decision = _decision()
+    decision['source_status'] = 'verified'
+    decision['source_digest'] = SOURCE_DIGEST
+    decision['assessments'][0]['factual_status'] = 'contradicted'
+    FAKE.nondet.exec_prompt = lambda prompt, **kwargs: json.dumps(decision)
+    with pytest.raises(UserError):
+        c.evaluate_contributions(project_id)
+    assert json.loads(c.get_project(project_id))['status'] == 'FROZEN'
+
+
+def test_closed_evidence_cannot_claim_external_support_without_reference(fixture):
+    c, _ = fixture
+    project_id = fully_submitted(c)
+    decision = _decision()
+    decision['assessments'][0]['factual_status'] = 'supported'
+    FAKE.nondet.exec_prompt = lambda prompt, **kwargs: json.dumps(decision)
+    with pytest.raises(UserError):
+        c.evaluate_contributions(project_id)
+    assert json.loads(c.get_project(project_id))['status'] == 'FROZEN'

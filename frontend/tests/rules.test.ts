@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {isSuccessfulFinalizedReceipt,makeSubmittedTransaction,parseSubmittedTransaction,recoveryMatchesWallet,submittedTransactionStorageKey} from '../lib/chain';
-import {parseGen,formatGen,bytes,validateCriteria,validateProjectInput} from '../lib/types';
+import {parseGen,formatGen,bytes,validateCriteria,validateProjectInput,validateVerifiedSource} from '../lib/types';
 const a='0x'+'1'.repeat(40),b='0x'+'2'.repeat(40),c='0x'+'3'.repeat(40),s='0x'+'4'.repeat(40);
 describe('funding and input invariants',()=>{
   it('preserves exact wei',()=>expect(parseGen('1.000000000000000001')).toBe(1000000000000000001n));
@@ -12,6 +12,7 @@ describe('funding and input invariants',()=>{
   it('blocks sponsor self invitation',()=>expect(()=>validateProjectInput('A','B',[a,b,s],s)).toThrow());
   it('blocks duplicate invitees',()=>expect(()=>validateProjectInput('A','B',[a,b,a],s)).toThrow());
   it('requires three bounded acceptance criteria',()=>{expect(()=>validateCriteria(['requirements','correction','integration'])).not.toThrow();expect(()=>validateCriteria(['one','two'])).toThrow();expect(()=>validateCriteria(['x','y','z'.repeat(361)])).toThrow();});
+  it('accepts only commit-pinned verified source metadata',()=>{const url='https://raw.githubusercontent.com/ometere123/creditsplit/'+'a'.repeat(40)+'/docs/CONSENSUS.md';expect(()=>validateVerifiedSource('', '')).not.toThrow();expect(()=>validateVerifiedSource(url,'b'.repeat(64))).not.toThrow();expect(()=>validateVerifiedSource('https://example.com/reference.md','b'.repeat(64))).toThrow();expect(()=>validateVerifiedSource(url,'bad')).toThrow();});
 });
 describe('transaction recovery scope',()=>{
   it('round-trips a chain, wallet, contract and method scoped record',()=>{
