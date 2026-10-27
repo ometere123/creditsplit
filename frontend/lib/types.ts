@@ -7,10 +7,12 @@ export type Assessment = {
   distinct: boolean;
   correctness: boolean;
   material_effect: MaterialEffect;
+  claim_type: 'factual'|'nonfactual';
   factual_status: 'supported'|'contradicted'|'unverifiable'|'not_applicable';
   attribution_consistent: boolean;
   evidence_ids: string[];
   evidence_anchors: string[];
+  source_evidence_anchors: string[];
   justification: string;
 };
 export type Decision = { complete: boolean; criteria_status: CriterionStatus[]; source_status: 'verified'|'not_used'; source_digest: string; assessments: Assessment[]; informational_weights: number[]; reason: string };

@@ -21,7 +21,8 @@ ANCHORS = {
 
 
 def _assessment(slot, effect, refs=None, relevance="direct", distinct=True,
-                correctness=True, attribution_consistent=True, factual_status="not_applicable", anchors=None):
+                correctness=True, attribution_consistent=True, factual_status="not_applicable",
+                claim_type="nonfactual", source_evidence_anchors=None, anchors=None):
     refs = [f"{slot}:1"] if refs is None and effect != "none" else (refs or [])
     anchors = ([ANCHORS[ref] for ref in refs] if anchors is None else anchors)
     return {
@@ -29,24 +30,35 @@ def _assessment(slot, effect, refs=None, relevance="direct", distinct=True,
         "distinct": distinct,
         "correctness": correctness,
         "material_effect": effect,
+        "claim_type": claim_type,
         "factual_status": factual_status,
         "attribution_consistent": attribution_consistent,
         "evidence_ids": refs,
         "evidence_anchors": anchors,
+        "source_evidence_anchors": source_evidence_anchors or [],
         "justification": f"Slot {slot} was assessed from the registered passage.",
     }
 
 
 def _decision(effects=("foundational", "substantial", "supporting"), complete=True,
               refs=None, criteria_status=None, source_status="not_used", source_digest="",
-              factual_status="not_applicable"):
+              factual_status="not_applicable", claim_types=None,
+              factual_statuses=None, source_evidence_anchors=None):
     refs = refs or [["0:1"], ["1:1"], ["2:1"]]
+    claim_types = claim_types or ["nonfactual", "nonfactual", "nonfactual"]
+    factual_statuses = factual_statuses or [factual_status, factual_status, factual_status]
+    source_evidence_anchors = source_evidence_anchors or [[], [], []]
     return {
         "complete": complete,
         "criteria_status": criteria_status or (["met", "met", "met"] if complete else ["not_met", "partial", "not_met"]),
         "source_status": source_status,
         "source_digest": source_digest,
-        "assessments": [_assessment(slot, effects[slot], refs=refs[slot], factual_status=factual_status) for slot in range(3)],
+        "assessments": [
+            _assessment(
+                slot, effects[slot], refs=refs[slot], factual_status=factual_statuses[slot],
+                claim_type=claim_types[slot], source_evidence_anchors=source_evidence_anchors[slot],
+            ) for slot in range(3)
+        ],
         "reason": "Frozen passages were assessed against the registered criteria.",
     }
 
@@ -393,6 +405,8 @@ def test_direct_benign_validator_reference_selection_does_not_disagree(
     direct_vm.clear_mocks()
     independent = _decision(refs=[["0:1", "1:1"], ["1:1", "0:1"], ["2:1"]])
     independent["reason"] = "Different explanation, same independently justified bands."
+    independent["assessments"][0]["relevance"] = "supporting"
+    independent["assessments"][1]["relevance"] = "supporting"
     direct_vm.mock_llm(r"EVIDENCE_DIGEST=.*", json.dumps(independent, separators=(",", ":")))
     assert direct_vm.run_validator(leader_result=good) is True
 
@@ -560,7 +574,12 @@ def test_direct_verified_source_is_independently_fetched_and_hash_bound(
     direct_vm.mock_web(SOURCE_URL, {"method": "GET", "status": 200, "body": SOURCE_BODY})
     direct_vm.mock_llm(
         r"EVIDENCE_DIGEST=.*",
-        _decision_json(source_status="verified", source_digest=SOURCE_DIGEST, factual_status="supported"),
+        _decision_json(
+            source_status="verified", source_digest=SOURCE_DIGEST,
+            claim_types=["factual", "factual", "nonfactual"],
+            factual_statuses=["supported", "supported", "not_applicable"],
+            source_evidence_anchors=[["validates registered work"], ["frozen reference"], []],
+        ),
     )
     contract.evaluate_contributions(project_id)
     project = json.loads(contract.get_project(project_id))
@@ -590,9 +609,52 @@ def test_direct_verified_source_contradicted_high_classification_is_rejected(
     contributors = [direct_bob, direct_charlie, direct_accounts[4]]
     project_id = _fully_frozen_verified(contract, direct_vm, direct_alice, contributors)
     direct_vm.mock_web(SOURCE_URL, {"method": "GET", "status": 200, "body": SOURCE_BODY})
-    decision = _decision(source_status="verified", source_digest=SOURCE_DIGEST, factual_status="supported")
+    decision = _decision(
+        source_status="verified", source_digest=SOURCE_DIGEST,
+        claim_types=["factual", "factual", "nonfactual"],
+        factual_statuses=["supported", "supported", "not_applicable"],
+        source_evidence_anchors=[["validates registered work"], ["frozen reference"], []],
+    )
     decision["assessments"][0]["factual_status"] = "contradicted"
     direct_vm.mock_llm(r"EVIDENCE_DIGEST=.*", json.dumps(decision, separators=(",", ":")))
+    with direct_vm.expect_revert("invalid validator-agreed judgment"):
+        contract.evaluate_contributions(project_id)
+    assert json.loads(contract.get_project(project_id))["status"] == "FROZEN"
+
+
+def test_direct_verified_source_requires_source_anchor_for_factual_high_credit(
+    direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
+):
+    contract = direct_deploy(CONTRACT)
+    contributors = [direct_bob, direct_charlie, direct_accounts[4]]
+    project_id = _fully_frozen_verified(contract, direct_vm, direct_alice, contributors)
+    direct_vm.mock_web(SOURCE_URL, {"method": "GET", "status": 200, "body": SOURCE_BODY})
+    forged = _decision(
+        source_status="verified", source_digest=SOURCE_DIGEST,
+        claim_types=["factual", "factual", "nonfactual"],
+        factual_statuses=["supported", "supported", "not_applicable"],
+        source_evidence_anchors=[[], ["frozen reference"], []],
+    )
+    direct_vm.mock_llm(r"EVIDENCE_DIGEST=.*", json.dumps(forged, separators=(",", ":")))
+    with direct_vm.expect_revert("invalid validator-agreed judgment"):
+        contract.evaluate_contributions(project_id)
+    assert json.loads(contract.get_project(project_id))["status"] == "FROZEN"
+
+
+def test_direct_verified_source_rejects_fabricated_source_anchor(
+    direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
+):
+    contract = direct_deploy(CONTRACT)
+    contributors = [direct_bob, direct_charlie, direct_accounts[4]]
+    project_id = _fully_frozen_verified(contract, direct_vm, direct_alice, contributors)
+    direct_vm.mock_web(SOURCE_URL, {"method": "GET", "status": 200, "body": SOURCE_BODY})
+    forged = _decision(
+        source_status="verified", source_digest=SOURCE_DIGEST,
+        claim_types=["factual", "factual", "nonfactual"],
+        factual_statuses=["supported", "supported", "not_applicable"],
+        source_evidence_anchors=[["invented source passage"], ["frozen reference"], []],
+    )
+    direct_vm.mock_llm(r"EVIDENCE_DIGEST=.*", json.dumps(forged, separators=(",", ":")))
     with direct_vm.expect_revert("invalid validator-agreed judgment"):
         contract.evaluate_contributions(project_id)
     assert json.loads(contract.get_project(project_id))["status"] == "FROZEN"
