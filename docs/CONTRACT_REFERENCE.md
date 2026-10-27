@@ -40,4 +40,4 @@ Completion is independent of merit. If all three criteria are met and the final 
 
 ## Current deployment
 
-The verified current address is [`0xEFf0D2023Fa34Ae150BBa77B906b22384920Dd44`](https://explorer-studio.genlayer.com/address/0xEFf0D2023Fa34Ae150BBa77B906b22384920Dd44), source SHA-256 `ED1E43BD4E32056ADF6D6DD0ED6CA0F126887391A4FC53D159A1644AF92C226F`. Its source provenance and live transaction ledger are in [`docs/DEPLOYMENT.md`](DEPLOYMENT.md) and [`docs/REVIEW_EVIDENCE.md`](REVIEW_EVIDENCE.md). The previous `0x03EEC...` address and its completed payout lifecycle remain historical evidence.
+The verified current address is [`0x1524e854C69cF5FBBB28f6F0f1828197C2839ecB`](https://explorer-studio.genlayer.com/address/0x1524e854C69cF5FBBB28f6F0f1828197C2839ecB), source SHA-256 `73fd5a760a2ce3c70af3d03802fd2439f2da29c671000a817fdbfab3f5d5ffa3`. Its source provenance and live transaction ledger are in [`docs/DEPLOYMENT.md`](DEPLOYMENT.md) and [`docs/REVIEW_EVIDENCE.md`](REVIEW_EVIDENCE.md). The previous `0xEFf0...` and `0x03EEC...` addresses and their lifecycles remain historical evidence.

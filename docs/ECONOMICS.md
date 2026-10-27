@@ -13,25 +13,25 @@
 
 ## Current hardened deployment
 
-Current contract: [0xEFf0D2023Fa34Ae150BBa77B906b22384920Dd44](https://explorer-studio.genlayer.com/address/0xEFf0D2023Fa34Ae150BBa77B906b22384920Dd44), source SHA-256 `ED1E43BD4E32056ADF6D6DD0ED6CA0F126887391A4FC53D159A1644AF92C226F`.
+Current contract: [0x1524e854C69cF5FBBB28f6F0f1828197C2839ecB](https://explorer-studio.genlayer.com/address/0x1524e854C69cF5FBBB28f6F0f1828197C2839ecB), source SHA-256 `73fd5a760a2ce3c70af3d03802fd2439f2da29c671000a817fdbfab3f5d5ffa3`.
 
-The current verified-source project 1 funded `1000000000000000` wei, completed all three criteria, and finalized with weights [5,3,3]. The deterministic recorded allocations were:
+The current verified-source project 1 funded `1000000000000000` wei, completed all three criteria, and finalized with weights [5,3,1]. The deterministic recorded allocations were:
 
 | Recipient | Weight | Amount |
 | --- | ---: | ---: |
-| A | 5 | 454545454545456 wei |
-| B | 3 | 272727272727272 wei |
-| C | 3 | 272727272727272 wei |
+| A | 5 | 555555555555556 wei |
+| B | 3 | 333333333333333 wei |
+| C | 1 | 111111111111111 wei |
 
-The evaluation is [0xcaa3c9510c92ad90be77f10848f70654e29ae25011eb5219f91503b0c8349ecb](https://explorer-studio.genlayer.com/tx/0xcaa3c9510c92ad90be77f10848f70654e29ae25011eb5219f91503b0c8349ecb). Triggered sends are A [0x845d62ccb2cd588ed779193f0af9d64ca28ad84eb5e53c769f1a6c731bfea658](https://explorer-studio.genlayer.com/tx/0x845d62ccb2cd588ed779193f0af9d64ca28ad84eb5e53c769f1a6c731bfea658), B [0x50c57fe8a239fe159d014de0ed7a0fd864506a64fe923190bbaf8de0991df3e0](https://explorer-studio.genlayer.com/tx/0x50c57fe8a239fe159d014de0ed7a0fd864506a64fe923190bbaf8de0991df3e0) and C [0xc35c8ebd93fa5aef60263527d3f4e26a8a1864ef809975bfad7fac8b80fda444](https://explorer-studio.genlayer.com/tx/0xc35c8ebd93fa5aef60263527d3f4e26a8a1864ef809975bfad7fac8b80fda444). All three child receipts finalized `NO_MAJORITY`, so no recipient balance credit is claimed for this current run:
+The evaluation is [0xf13ff7565c483b16a05c8ad892277d30ca660997aa9d534a9e8c8cb2809db27a](https://explorer-studio.genlayer.com/tx/0xf13ff7565c483b16a05c8ad892277d30ca660997aa9d534a9e8c8cb2809db27a). Triggered sends are A [0x22b6747bb94ece5ac0d587f5e2344cea1fd23b63122e3a7fa1572d22900e65ab](https://explorer-studio.genlayer.com/tx/0x22b6747bb94ece5ac0d587f5e2344cea1fd23b63122e3a7fa1572d22900e65ab), B [0x34b0f1499626c7c41e07cb1681ab09c7d66ba11b3fe45c3b4935c5bc18246c79](https://explorer-studio.genlayer.com/tx/0x34b0f1499626c7c41e07cb1681ab09c7d66ba11b3fe45c3b4935c5bc18246c79) and C [0x2f6c7a1550856f84b7b850de11084436d3418295fa3ef1f12ac749cdeedc6329](https://explorer-studio.genlayer.com/tx/0x2f6c7a1550856f84b7b850de11084436d3418295fa3ef1f12ac749cdeedc6329). Each child record finalized `NO_MAJORITY` with `value_credited=true` and no child execution hash; direct balance readback nevertheless confirmed exact recipient deltas equal to the allocations.
 
 | Recipient | Final RPC balance |
 | --- | ---: |
-| A | No verified credit in this run |
-| B | No verified credit in this run |
-| C | No verified credit in this run |
+| A | Pre/post delta `+555555555555556` wei |
+| B | Pre/post delta `+333333333333333` wei |
+| C | Pre/post delta `+111111111111111` wei |
 
-The contract correctly exposes `EMITTED_UNVERIFIED`: the parent allocated and emitted messages, but child consensus did not execute those transfers. This demonstrates why the frontend must distinguish allocation, emission and beneficiary credit.
+The contract correctly exposes `EMITTED_UNVERIFIED`: the parent allocated and emitted messages, while the child records have no execution hash. Independent balance readback confirmed the exact deltas in this run, but the protocol does not provide a universal callback proving every future EOA delivery. The frontend must distinguish allocation, emission, child execution evidence and beneficiary credit.
 
 The successful native payout for 0.01 GEN is preserved below as historical `0x03EEC...` evidence. The current source-verified project is not used to claim a successful payout.
 

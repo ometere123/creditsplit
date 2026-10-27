@@ -20,7 +20,7 @@ Creditsplit Python Intelligent Contract (one deployment)
       └─ Public project list, full history, reputation + accounting views
 ```
 
-The authoritative current deployment is `0xEFf0D2023Fa34Ae150BBa77B906b22384920Dd44` on StudioNet `61999`, source SHA-256 `ED1E43BD4E32056ADF6D6DD0ED6CA0F126887391A4FC53D159A1644AF92C226F`. Earlier addresses and their lifecycles are historical evidence only; they are not interchangeable with the current frontend target.
+The authoritative current deployment is `0x1524e854C69cF5FBBB28f6F0f1828197C2839ecB` on StudioNet `61999`, source SHA-256 `73fd5a760a2ce3c70af3d03802fd2439f2da29c671000a817fdbfab3f5d5ffa3`. Earlier addresses and their lifecycles are historical evidence only; they are not interchangeable with the current frontend target.
 
 ## States
 
