@@ -19,7 +19,7 @@ Results are evidence records, not self-assigned portal scores. Current-contract 
 | Runtime dependency audit | root npm audit --omit=dev --audit-level=high and frontend npm audit --audit-level=high | No high-severity runtime/frontend findings; root CLI development-tree advisories are tracked separately |
 | Secret scan | CI tracked-source scan excluding lockfiles | Clean |
 
-The source-release verification passed locally on commit `ee4d69fb4dafef90e142ead48814422dd7568a41`; the exact GitHub Actions run for the final pushed closeout is recorded with the final main SHA.
+The source-release verification passed locally on commit `ee4d69fb4dafef90e142ead48814422dd7568a41`. The final documentation/configuration closeout is commit `258cc08bc603ce672a765d10863a553f92584bd4`, and [GitHub Actions run 40572448684](https://github.com/ometere123/creditsplit/actions/runs/40572448684) completed successfully for that exact SHA.
 
 ## Current live contract evidence
 

@@ -7,12 +7,13 @@ This ledger separates the authoritative current release from historical deployme
 | Item | Evidence |
 | --- | --- |
 | Source-release commit | [`ee4d69fb4dafef90e142ead48814422dd7568a41`](https://github.com/ometere123/creditsplit/commit/ee4d69fb4dafef90e142ead48814422dd7568a41) |
+| Final main commit | [`258cc08bc603ce672a765d10863a553f92584bd4`](https://github.com/ometere123/creditsplit/commit/258cc08bc603ce672a765d10863a553f92584bd4) |
 | Contract source SHA-256 | `ED1E43BD4E32056ADF6D6DD0ED6CA0F126887391A4FC53D159A1644AF92C226F` |
 | Current contract | [`0xEFf0D2023Fa34Ae150BBa77B906b22384920Dd44`](https://explorer-studio.genlayer.com/address/0xEFf0D2023Fa34Ae150BBa77B906b22384920Dd44) |
 | Deployment | [`0xdb0d4fa219df9a1150687a2672fc035b64f321d5aff74b2ad6be47ab88ba95fa`](https://explorer-studio.genlayer.com/tx/0xdb0d4fa219df9a1150687a2672fc035b64f321d5aff74b2ad6be47ab88ba95fa), FINALIZED / MAJORITY_AGREE / SUCCESS |
 | Network | StudioNet chain `61999`, `https://studio.genlayer.com/api` |
 | Production | [`https://creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app) |
-| Exact-SHA source-release CI | Pending the final pushed closeout commit; no CI URL is claimed until GitHub reports success for that exact SHA |
+| Exact-SHA source-release CI | [GitHub Actions run 40572448684](https://github.com/ometere123/creditsplit/actions/runs/40572448684), `success` for final main commit `258cc08bc603ce672a765d10863a553f92584bd4` |
 
 The contract source last changed at `ee4d69fb4dafef90e142ead48814422dd7568a41`; `gen_getContractCode` returned 40,121 bytes with the exact source hash above, and the registered schema reports 18 methods (5 views, 13 writes), including the optional verified-source creation path. This document is updated after the source-matched deployment; the final main commit may add only the release ledger/configuration and CI evidence.
 
@@ -94,7 +95,7 @@ No seed phrase, private key, keystore password or browser secret is included in 
 
 - **GenLayer Fit:** the current contract has a live source-augmented assessment over frozen participant evidence plus a commit-pinned external reference; the evidence still does not prove human authorship, universal originality or non-collusion.
 - **Intelligent Contract Quality:** the targeted attribution, duplicate, anchor, completion/refund and deterministic-settlement controls are implemented and regression-tested; the current run exposed the callbackless child-transfer limitation honestly and disagreement can remain fail-closed.
-- **Engineering Quality:** pinned tests, semantic lint, exact source registration, live RPC readbacks and source-mode consensus evidence are present; final exact-SHA CI and Vercel configuration still require publication/authorization reconciliation.
+- **Engineering Quality:** pinned tests, semantic lint, exact source registration, live RPC readbacks, source-mode consensus evidence, exact-SHA CI and the current Ready Vercel deployment are present.
 - **Frontend/UX:** the production application has manual connected-wallet evidence on the historical deployment plus desktop/mobile smoke coverage; browser-wallet QA against the new source-verified address and a current-contract live refund/payout are not claimed.
 
 Reviewers should inspect the source, final CI run, deployment receipt, current source-mode project 1 readback, parent/child records and historical recipient accounts directly. This ledger does not award portal scores.

@@ -16,7 +16,8 @@ The current contract source changed in [`ee4d69fb4dafef90e142ead48814422dd7568a4
 | Registered source | `gen_getContractCode` decoded to exactly that SHA-256; 40,121 bytes |
 | Initial readback | `get_project_count() = 0`; accounting had zero active escrow and zero dispatched GEN |
 | Current Vercel alias | [`https://creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app) |
-| Source-release CI | The source-release checks passed locally; the final documentation/configuration commit's exact CI run is recorded after push |
+| Final main commit | [`258cc08bc603ce672a765d10863a553f92584bd4`](https://github.com/ometere123/creditsplit/commit/258cc08bc603ce672a765d10863a553f92584bd4) |
+| Exact-SHA CI | [GitHub Actions run 40572448684](https://github.com/ometere123/creditsplit/actions/runs/40572448684), `success` for the final main commit |
 
 Deployment command used for the current contract:
 
@@ -115,11 +116,12 @@ Attempts [A](https://explorer-studio.genlayer.com/tx/0x5871890bcccbcb55d1b3980f2
 
 ## Vercel production
 
-The existing Vercel project `creditsplit` uses `frontend/` as its Root Directory and team `team_zqLSqTEYuxYTP42pCCst09F3`. The repository configuration now points at the current contract. Updating the existing production environment and alias is pending one-time authorization to that Vercel team; no new project is being created.
+The existing Vercel project `creditsplit` uses `frontend/` as its Root Directory and team `team_zqLSqTEYuxYTP42pCCst09F3`. The production environment now contains the current contract address as `NEXT_PUBLIC_CONTRACT_ADDRESS`; no new project was created.
 
 - Public alias: [`https://creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app)
-- Last documented Ready deployment: [`https://creditsplit-1wpw7qnkm-delealufejoel-4184s-projects.vercel.app`](https://creditsplit-1wpw7qnkm-delealufejoel-4184s-projects.vercel.app)
-- Inspect: [`https://vercel.com/delealufejoel-4184s-projects/creditsplit/3f8JPTkTEj96Mtd41kM2bhQhgzk9`](https://vercel.com/delealufejoel-4184s-projects/creditsplit/3f8JPTkTEj96Mtd41kM2bhQhgzk9)
-- Status: last documented `Ready`, Node `22.x`, public HTTP check `200`; current-contract environment update is not claimed until team authorization succeeds.
+- Current Ready deployment: [`creditsplit-ka3bh6m8f-delealufejoel-4184s-projects.vercel.app`](https://creditsplit-ka3bh6m8f-delealufejoel-4184s-projects.vercel.app)
+- Inspect: [`https://vercel.com/delealufejoel-4184s-projects/creditsplit/AfQqMvmKVxeaQ8waVU8riRTj5eJb`](https://vercel.com/delealufejoel-4184s-projects/creditsplit/AfQqMvmKVxeaQ8waVU8riRTj5eJb)
+- Deployment ID: `dpl_AfQqMvmKVxeaQ8waVU8riRTj5eJb`; status `READY`, target `production`, Node `22.x`, alias `creditsplit-sigma.vercel.app`.
+- Convert Chrome verification: the production alias loaded successfully and displayed the Creditsplit UI on StudioNet 61999. The current source-mode lifecycle was not re-run through the browser wallet; the current browser evidence remains a read/UI verification, while the signed lifecycle in this ledger is historical.
 
 GitHub auto-deployment is not connected; this is the existing direct-source project, not a replacement project. The frontend source/build is locally verified against the new address, but the production alias must be redeployed after team authorization.
