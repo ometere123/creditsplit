@@ -7,13 +7,13 @@ This ledger separates the authoritative current release from historical deployme
 | Item | Evidence |
 | --- | --- |
 | Source-release commit | [`ee4d69fb4dafef90e142ead48814422dd7568a41`](https://github.com/ometere123/creditsplit/commit/ee4d69fb4dafef90e142ead48814422dd7568a41) |
-| Final main commit | [`258cc08bc603ce672a765d10863a553f92584bd4`](https://github.com/ometere123/creditsplit/commit/258cc08bc603ce672a765d10863a553f92584bd4) |
+| Final main commit | [`10dded4c545671d632e1535bbc05d9f1cbae261a`](https://github.com/ometere123/creditsplit/commit/10dded4c545671d632e1535bbc05d9f1cbae261a) |
 | Contract source SHA-256 | `ED1E43BD4E32056ADF6D6DD0ED6CA0F126887391A4FC53D159A1644AF92C226F` |
 | Current contract | [`0xEFf0D2023Fa34Ae150BBa77B906b22384920Dd44`](https://explorer-studio.genlayer.com/address/0xEFf0D2023Fa34Ae150BBa77B906b22384920Dd44) |
 | Deployment | [`0xdb0d4fa219df9a1150687a2672fc035b64f321d5aff74b2ad6be47ab88ba95fa`](https://explorer-studio.genlayer.com/tx/0xdb0d4fa219df9a1150687a2672fc035b64f321d5aff74b2ad6be47ab88ba95fa), FINALIZED / MAJORITY_AGREE / SUCCESS |
 | Network | StudioNet chain `61999`, `https://studio.genlayer.com/api` |
 | Production | [`https://creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app) |
-| Exact-SHA source-release CI | [GitHub Actions run 40572448684](https://github.com/ometere123/creditsplit/actions/runs/40572448684), `success` for final main commit `258cc08bc603ce672a765d10863a553f92584bd4` |
+| Exact-SHA source-release CI | [GitHub Actions run 40574626765](https://github.com/ometere123/creditsplit/actions/runs/40574626765), `success` for final main commit `10dded4c545671d632e1535bbc05d9f1cbae261a` |
 
 The contract source last changed at `ee4d69fb4dafef90e142ead48814422dd7568a41`; `gen_getContractCode` returned 40,121 bytes with the exact source hash above, and the registered schema reports 18 methods (5 views, 13 writes), including the optional verified-source creation path. This document is updated after the source-matched deployment; the final main commit may add only the release ledger/configuration and CI evidence.
 

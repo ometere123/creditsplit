@@ -16,8 +16,8 @@ The current contract source changed in [`ee4d69fb4dafef90e142ead48814422dd7568a4
 | Registered source | `gen_getContractCode` decoded to exactly that SHA-256; 40,121 bytes |
 | Initial readback | `get_project_count() = 0`; accounting had zero active escrow and zero dispatched GEN |
 | Current Vercel alias | [`https://creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app) |
-| Final main commit | [`258cc08bc603ce672a765d10863a553f92584bd4`](https://github.com/ometere123/creditsplit/commit/258cc08bc603ce672a765d10863a553f92584bd4) |
-| Exact-SHA CI | [GitHub Actions run 40572448684](https://github.com/ometere123/creditsplit/actions/runs/40572448684), `success` for the final main commit |
+| Final main commit | [`10dded4c545671d632e1535bbc05d9f1cbae261a`](https://github.com/ometere123/creditsplit/commit/10dded4c545671d632e1535bbc05d9f1cbae261a) |
+| Exact-SHA CI | [GitHub Actions run 40574626765](https://github.com/ometere123/creditsplit/actions/runs/40574626765), `success` for the final main commit |
 
 Deployment command used for the current contract:
 
