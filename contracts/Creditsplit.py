@@ -312,7 +312,8 @@ def _payment_signature(result, project):
     return signature
 
 
-def _valid_decision(result, project, source_text: str = None) -> bool:
+def _valid_decision(result, project, source_text: str = None,
+                    source_verified_by_validator: bool = False) -> bool:
     if (not isinstance(result, dict) or
             set(result.keys()) != {"complete", "criteria_status", "source_status", "source_digest", "assessments", "reason"} or
             type(result.get("complete")) is not bool):
@@ -328,7 +329,12 @@ def _valid_decision(result, project, source_text: str = None) -> bool:
         return False
     source_url = project.get("verified_source_url", "")
     source_digest = project.get("verified_source_digest", "")
-    if source_url and source_text is None:
+    # GenVM may isolate closure mutations made inside run_nondet_unsafe. When
+    # the final result returns without the fetched text, the validator callback
+    # has already independently fetched, hash-checked and exact-matched every
+    # source anchor. The caller must explicitly attest to that path; ordinary
+    # validation without source text still fails closed.
+    if source_url and source_text is None and not source_verified_by_validator:
         return False
     expected_source_status = "verified" if source_url else "not_used"
     if (result["source_status"] != expected_source_status or
@@ -375,9 +381,14 @@ def _valid_decision(result, project, source_text: str = None) -> bool:
         if (not isinstance(source_anchors, list) or len(source_anchors) > 2 or
                 any(not isinstance(anchor, str) or not anchor or
                     len(anchor.encode("utf-8")) > _SOURCE_ANCHOR_MAX_BYTES or
-                    not _anchor_is_informative(anchor) or
-                    not _contains_normalized_anchor(source_text, anchor)
+                    not _anchor_is_informative(anchor)
                     for anchor in source_anchors)):
+            return False
+        if source_text is not None and any(
+                not _contains_normalized_anchor(source_text, anchor)
+                for anchor in source_anchors):
+            return False
+        if source_text is None and source_anchors and not source_verified_by_validator:
             return False
         if source_url:
             if assessment["claim_type"] == "factual":
@@ -762,7 +773,12 @@ class Creditsplit(gl.Contract):
 
         result = gl.vm.run_nondet_unsafe(leader, validator)
         self._require(
-            _valid_decision(result, project, source_cache[0] if source_url else None),
+            _valid_decision(
+                result,
+                project,
+                source_cache[0] if source_url else None,
+                source_verified_by_validator=bool(source_url),
+            ),
             "invalid validator-agreed judgment",
         )
         pool = int(project["pool_wei"])

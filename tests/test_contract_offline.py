@@ -119,6 +119,7 @@ def load_contract():
     imported=importlib.util.module_from_spec(spec);spec.loader.exec_module(imported)
     imported._NativeRecipient=FakeRecipient
     chain=imported.Creditsplit()
+    chain._valid_decision = imported._valid_decision
     # The real GenVM creates annotated persistent fields automatically. The
     # offline harness supplies ordinary in-memory equivalents explicitly.
     chain.projects=Map()
@@ -593,6 +594,22 @@ def test_verified_source_is_fetched_by_the_assessment_and_recorded(fixture):
     assert project['decision']['source_status'] == 'verified'
     assert project['decision']['source_digest'] == SOURCE_DIGEST
     assert project['weights'] == [5, 3, 1]
+
+
+def test_final_source_validation_accepts_only_validator_verified_cache_isolation(fixture):
+    c, _ = fixture
+    FAKE.web_body = SOURCE_BODY
+    project_id = fully_submitted_verified(c)
+    decision = _decision(
+        claim_types=['factual', 'factual', 'nonfactual'],
+        factual_statuses=['supported', 'supported', 'not_applicable'],
+        source_evidence_anchors=[['validates registered work'], ['frozen reference'], []],
+    )
+    decision['source_status'] = 'verified'
+    decision['source_digest'] = SOURCE_DIGEST
+    project = json.loads(c.get_project(project_id))
+    assert not c._valid_decision(decision, project)
+    assert c._valid_decision(decision, project, source_verified_by_validator=True)
 
 
 def test_verified_source_substitution_or_unavailability_fails_closed(fixture):
