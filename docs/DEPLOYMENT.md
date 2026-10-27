@@ -4,19 +4,19 @@ This ledger is the authoritative deployment record for Creditsplit. It uses only
 
 ## Authoritative current release
 
-The current contract source last changed in [`3a745ab95795634769e9bd02993e58a52c10a71d`](https://github.com/ometere123/creditsplit/commit/3a745ab95795634769e9bd02993e58a52c10a71d). The source release was recorded at [`e6e435b50d3292bd34e918f9e0254910f32377b3`](https://github.com/ometere123/creditsplit/commit/e6e435b50d3292bd34e918f9e0254910f32377b3); subsequent closeout commits are documentation-only and do not alter `contracts/Creditsplit.py`.
+The current contract source changed in [`ee4d69fb4dafef90e142ead48814422dd7568a41`](https://github.com/ometere123/creditsplit/commit/ee4d69fb4dafef90e142ead48814422dd7568a41). The source SHA is `ED1E43BD4E32056ADF6D6DD0ED6CA0F126887391A4FC53D159A1644AF92C226F`; later closeout commits are documentation/configuration-only and do not alter `contracts/Creditsplit.py`.
 
 | Item | Verified value |
 | --- | --- |
 | Network | StudioNet, chain `61999`, RPC `https://studio.genlayer.com/api` |
-| Current contract | [`0x03EEC54406D220ce484002A1A493d73D09b7F57C`](https://explorer-studio.genlayer.com/address/0x03EEC54406D220ce484002A1A493d73D09b7F57C) |
-| Deployment transaction | [`0x64f7f36cbc2eb8349e6e68850cc00bf839fecb7251c05941b1b67a62d95d405f`](https://explorer-studio.genlayer.com/tx/0x64f7f36cbc2eb8349e6e68850cc00bf839fecb7251c05941b1b67a62d95d405f) |
+| Current contract | [`0xEFf0D2023Fa34Ae150BBa77B906b22384920Dd44`](https://explorer-studio.genlayer.com/address/0xEFf0D2023Fa34Ae150BBa77B906b22384920Dd44) |
+| Deployment transaction | [`0xdb0d4fa219df9a1150687a2672fc035b64f321d5aff74b2ad6be47ab88ba95fa`](https://explorer-studio.genlayer.com/tx/0xdb0d4fa219df9a1150687a2672fc035b64f321d5aff74b2ad6be47ab88ba95fa) |
 | Deployment result | `FINALIZED`, `MAJORITY_AGREE`, leader execution `SUCCESS`; source registration succeeded |
-| Current contract source SHA-256 | `794231E47E0EF7873E6F14A4BBC9FC7B0D1CAF94A2C9BBDE9DBFD85A52612818` |
-| Registered source | `gen_getContractCode` decoded to exactly that SHA-256; 32,875 bytes |
+| Current contract source SHA-256 | `ED1E43BD4E32056ADF6D6DD0ED6CA0F126887391A4FC53D159A1644AF92C226F` |
+| Registered source | `gen_getContractCode` decoded to exactly that SHA-256; 40,121 bytes |
 | Initial readback | `get_project_count() = 0`; accounting had zero active escrow and zero dispatched GEN |
 | Current Vercel alias | [`https://creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app) |
-| Source-release CI | [GitHub Actions run 40213726715](https://github.com/ometere123/creditsplit/actions/runs/40213726715), successful on the exact source-release commit above |
+| Source-release CI | The source-release checks passed locally; the final documentation/configuration commit's exact CI run is recorded after push |
 
 Deployment command used for the current contract:
 
@@ -24,7 +24,7 @@ Deployment command used for the current contract:
 npx --no-install genlayer deploy --contract contracts/Creditsplit.py --rpc https://studio.genlayer.com/api
 ```
 
-The current registered schema responds with 17 methods: 5 views and 12 writes. No new contract is required for this documentation reconciliation.
+The current registered schema responds with 18 methods: 5 views and 13 writes, including `create_project_with_verified_source`. Initial reads returned `get_project_count() = 0` and zero active/dispatched accounting.
 
 ## Chronological deployment history
 
@@ -35,19 +35,20 @@ These rows identify source-matched Creditsplit deployments. Addresses below the 
 | HISTORICAL | [`0xB8d8Cc8384a0eaeFFC7998521E2a4fFD8deFC5C3`](https://explorer-studio.genlayer.com/address/0xB8d8Cc8384a0eaeFFC7998521E2a4fFD8deFC5C3) | `897815d7ce7d0afcb297e3c530c2341359cdab94` | `4321A21BB8240445F0BC0EC4D4D26AFA2DA0A6D03FE71226030B39176D1C5B8D` | [`0x07d2c917d0c004836b8c8b20ce8501fb560cac1a3e4972c3157874e2c4c7ee28`](https://explorer-studio.genlayer.com/tx/0x07d2c917d0c004836b8c8b20ce8501fb560cac1a3e4972c3157874e2c4c7ee28) |
 | HISTORICAL | [`0xaa14cb0B1f6c4868096Ef70dE131B93037B324fD`](https://explorer-studio.genlayer.com/address/0xaa14cb0B1f6c4868096Ef70dE131B93037B324fD) | `944f4643665e3c85edc2ae90471c24b6220409f6` | `5961AF1206D162BE60CE8756C2099B497FE81743924F7EB1393D893F5388551A` | [`0x0291a6fc1967b16b2479dce2bd26a5d3febbb0a06e43b8336e0f13dda6ad6dbe`](https://explorer-studio.genlayer.com/tx/0x0291a6fc1967b16b2479dce2bd26a5d3febbb0a06e43b8336e0f13dda6ad6dbe) |
 | HISTORICAL | [`0x49a63512878c639C8205c7f0c32eeFa78E8aBF3f`](https://explorer-studio.genlayer.com/address/0x49a63512878c639C8205c7f0c32eeFa78E8aBF3f) | `18042d55d1de610b9f87d914a0bef3bfd8c7545f` | `0AA8AACDDF5E65B72B60BFFC057F8393B46B586B7B60185C815CD1D50DDDCCAF` | [`0x2016405aad3d64cec94db8065c02d647b9019d7f28d9d5dd0fe75b4f3fca435b`](https://explorer-studio.genlayer.com/tx/0x2016405aad3d64cec94db8065c02d647b9019d7f28d9d5dd0fe75b4f3fca435b) |
-| CURRENT | [`0x03EEC54406D220ce484002A1A493d73D09b7F57C`](https://explorer-studio.genlayer.com/address/0x03EEC54406D220ce484002A1A493d73D09b7F57C) | `3a745ab95795634769e9bd02993e58a52c10a71d` | `794231E47E0EF7873E6F14A4BBC9FC7B0D1CAF94A2C9BBDE9DBFD85A52612818` | [`0x64f7f36cbc2eb8349e6e68850cc00bf839fecb7251c05941b1b67a62d95d405f`](https://explorer-studio.genlayer.com/tx/0x64f7f36cbc2eb8349e6e68850cc00bf839fecb7251c05941b1b67a62d95d405f) |
+| HISTORICAL | [`0x03EEC54406D220ce484002A1A493d73D09b7F57C`](https://explorer-studio.genlayer.com/address/0x03EEC54406D220ce484002A1A493d73D09b7F57C) | `3a745ab95795634769e9bd02993e58a52c10a71d` | `794231E47E0EF7873E6F14A4BBC9FC7B0D1CAF94A2C9BBDE9DBFD85A52612818` | [`0x64f7f36cbc2eb8349e6e68850cc00bf839fecb7251c05941b1b67a62d95d405f`](https://explorer-studio.genlayer.com/tx/0x64f7f36cbc2eb8349e6e68850cc00bf839fecb7251c05941b1b67a62d95d405f) |
+| CURRENT | [`0xEFf0D2023Fa34Ae150BBa77B906b22384920Dd44`](https://explorer-studio.genlayer.com/address/0xEFf0D2023Fa34Ae150BBa77B906b22384920Dd44) | `ee4d69fb4dafef90e142ead48814422dd7568a41` | `ED1E43BD4E32056ADF6D6DD0ED6CA0F126887391A4FC53D159A1644AF92C226F` | [`0xdb0d4fa219df9a1150687a2672fc035b64f321d5aff74b2ad6be47ab88ba95fa`](https://explorer-studio.genlayer.com/tx/0xdb0d4fa219df9a1150687a2672fc035b64f321d5aff74b2ad6be47ab88ba95fa) |
 
 The diagnostic-only contract [`0xF357362A1c1D725bC57B1F04e1c227D5532F94E9`](https://explorer-studio.genlayer.com/address/0xF357362A1c1D725bC57B1F04e1c227D5532F94E9), deployed by [`0x5d1f38ef1599f26419046673a0df7794a8f15cd8c95970a7ae83fb530d6db3b7`](https://explorer-studio.genlayer.com/tx/0x5d1f38ef1599f26419046673a0df7794a8f15cd8c95970a7ae83fb530d6db3b7), is not a Creditsplit release. Its deterministic `get_value() = 7` readback established that the pinned StudioNet deployment path can work.
 
-## Current contract: project 1 browser funding
+## Historical contract 0x03EEC: project 1 browser funding
 
-The first production write through the Vercel application in Convert Chrome with the injected Rabby EIP-1193 wallet was [`0x96f69cb434c0291a3b314b9d74e3f8204eec57c8888a7ac8807274eecaa20474`](https://explorer-studio.genlayer.com/tx/0x96f69cb434c0291a3b314b9d74e3f8204eec57c8888a7ac8807274eecaa20474). It targeted the current contract, finalized with `MAJORITY_AGREE`, successful execution and `value_credited=true`, and created project `1` with `10000000000000000` wei.
+The first production write through the Vercel application in Convert Chrome with the injected Rabby EIP-1193 wallet was [`0x96f69cb434c0291a3b314b9d74e3f8204eec57c8888a7ac8807274eecaa20474`](https://explorer-studio.genlayer.com/tx/0x96f69cb434c0291a3b314b9d74e3f8204eec57c8888a7ac8807274eecaa20474). It targeted the historical `0x03EEC...` contract, finalized with `MAJORITY_AGREE`, successful execution and `value_credited=true`, and created project `1` with `10000000000000000` wei.
 
 Direct readback identifies sponsor `0x23187bf36c9b935189cda33deeec6912bc2a211b`, the three CLI-wallet invitees, the three immutable criteria and `pool_wei=10000000000000000`. Project 1 remains `RECRUITING` with `0/3` joined; `recruit_due=1793110289` (`2026-10-27T14:11:29Z`). No recruitment refund has been broadcast or claimed. Refresh and reconnect in the production browser preserved the on-chain project state.
 
-## Current contract: complete project 2 lifecycle
+## Historical contract 0x03EEC: complete project 2 lifecycle
 
-Every transaction in this section targets the current `0x03EEC...F57C` contract. The lifecycle was executed through the production Vercel application in Convert Chrome/Rabby while switching among the authorized sponsor and contributor wallets. The packets are actual text submitted on-chain; no external documents, GitHub files or evidence oracle were fetched.
+Every transaction in this section targets the historical `0x03EEC...F57C` contract. The lifecycle was executed through the production Vercel application in Convert Chrome/Rabby while switching among the authorized sponsor and contributor wallets. The packets are actual text submitted on-chain; no external documents, GitHub files or evidence oracle were fetched.
 
 | Step / method | Transaction hash(es) | Verified result |
 | --- | --- | --- |
@@ -79,6 +80,29 @@ The final `get_project(2)` readback was `SETTLEMENT_EMITTED`, `completion=true`,
 
 The amounts sum exactly to the `10000000000000000` wei project pool. Current global accounting is `project_count=2`, `active_escrow_wei=10000000000000000` (project 1 remains recruiting) and `total_dispatched_wei=10000000000000000` (project 2). The contract label `EMITTED_UNVERIFIED` is intentionally conservative; this instance has independent Explorer `Send` and recipient-balance confirmation, but the protocol has no universal callback proving every future EOA delivery.
 
+## Current contract: verified-source project 1
+
+The current contract's source-verification demonstration used a sponsor-registered, commit-pinned reference rather than an arbitrary live URL:
+
+- URL: [`https://raw.githubusercontent.com/ometere123/creditsplit/2767a0ac558a0d52828ee94f015e26dee6dfb18f/docs/CONSENSUS.md`](https://raw.githubusercontent.com/ometere123/creditsplit/2767a0ac558a0d52828ee94f015e26dee6dfb18f/docs/CONSENSUS.md)
+- SHA-256: `e68b6d5448dd668219c8fcb13eeee38f0fbd0f6dafd2e355039ea0fc7f68b112`
+- Pool: `1000000000000000` wei (`0.001 GEN`)
+- Creation: [`0x549443ee02014ea72065af41af7ccfc76e243d066c0e35ace9d874633fd9b683`](https://explorer-studio.genlayer.com/tx/0x549443ee02014ea72065af41af7ccfc76e243d066c0e35ace9d874633fd9b683), finalized with value credited
+- Contributors: A `0xd569adb71de7315858161c9fc3550c627b52c066`, B `0x66012b2bea91a2ba6669a08071569181cef092b9`, C `0x120d61d92b94416dabf9bfa904673bd441dbda85`
+
+| Stage | Transaction evidence |
+| --- | --- |
+| Joins A/B/C | [`0xbe04547f846269ac4769a96eb176c976ad0679961e479e613dbe2eef2bf0b180`](https://explorer-studio.genlayer.com/tx/0xbe04547f846269ac4769a96eb176c976ad0679961e479e613dbe2eef2bf0b180), [`0x3e7f56f056419d00a55890c4e5f70501fb135ad215cff149fbc6def8362713c6`](https://explorer-studio.genlayer.com/tx/0x3e7f56f056419d00a55890c4e5f70501fb135ad215cff149fbc6def8362713c6), [`0x064dd4ba5018f1303e7bab13709fa59d243b0ad29edf2bdac77d4aa07ca4c36e`](https://explorer-studio.genlayer.com/tx/0x064dd4ba5018f1303e7bab13709fa59d243b0ad29edf2bdac77d4aa07ca4c36e) |
+| Authored packets | A [`0xa63b651e6d5c5cf9aafa6ca8b51b6d22f9878d7a4285a14008aa53c41c949796`](https://explorer-studio.genlayer.com/tx/0xa63b651e6d5c5cf9aafa6ca8b51b6d22f9878d7a4285a14008aa53c41c949796), B correction [`0x0989039cb2403c8d00a8f4d673f02ef9ebae2cd31e213ea336b55b2d5dd6e9e1`](https://explorer-studio.genlayer.com/tx/0x0989039cb2403c8d00a8f4d673f02ef9ebae2cd31e213ea336b55b2d5dd6e9e1), C [`0xdc49f86751bec204255d26ffd1076a216bb31d874f8dac7fb9c2b19baef7dbcf`](https://explorer-studio.genlayer.com/tx/0xdc49f86751bec204255d26ffd1076a216bb31d874f8dac7fb9c2b19baef7dbcf) |
+| Finish A/B/C | [`0x04cdc8f92076fc3166fcab58e873c94ad8f706d3dccc572cc870cd5c57c5682c`](https://explorer-studio.genlayer.com/tx/0x04cdc8f92076fc3166fcab58e873c94ad8f706d3dccc572cc870cd5c57c5682c), [`0x0ff73e3b940ac976ba15e5e651d63eade88fc57286f8861846bac3e70d472a9f`](https://explorer-studio.genlayer.com/tx/0x0ff73e3b940ac976ba15e5e651d63eade88fc57286f8861846bac3e70d472a9f), [`0xb7f911e41eca7013d4a70ff21cf2559a73e65d8828a41db77e56cfee320b460a`](https://explorer-studio.genlayer.com/tx/0xb7f911e41eca7013d4a70ff21cf2559a73e65d8828a41db77e56cfee320b460a) |
+| Final artifact | [`0x31c191500cf41422e33982db2276d3ff7307f023e6db0880f3c5baa6f5702549`](https://explorer-studio.genlayer.com/tx/0x31c191500cf41422e33982db2276d3ff7307f023e6db0880f3c5baa6f5702549) |
+| Attribution responses A/B/C | [`0xcaa5cf8f93bc739f1a263307d8a7ec61b8e924a6f3e2e82184f99c081380d726`](https://explorer-studio.genlayer.com/tx/0xcaa5cf8f93bc739f1a263307d8a7ec61b8e924a6f3e2e82184f99c081380d726), [`0xaf2a6a413760848ef022fc14315232077e4bfda4884f772b2bd5e4cb75f040f3`](https://explorer-studio.genlayer.com/tx/0xaf2a6a413760848ef022fc14315232077e4bfda4884f772b2bd5e4cb75f040f3), [`0xb08089bf8c0ede6981925cdf0a527fb28a28c7706e1af44ba8fd3557f8161ec0`](https://explorer-studio.genlayer.com/tx/0xb08089bf8c0ede6981925cdf0a527fb28a28c7706e1af44ba8fd3557f8161ec0) |
+| Freeze | [`0x010c83618d78af831ae5d00113ec3f600e5ed0c7917d767597574238218d3c3e`](https://explorer-studio.genlayer.com/tx/0x010c83618d78af831ae5d00113ec3f600e5ed0c7917d767597574238218d3c3e), canonical digest read back from state |
+| Evaluation | [`0xcaa3c9510c92ad90be77f10848f70654e29ae25011eb5219f91503b0c8349ecb`](https://explorer-studio.genlayer.com/tx/0xcaa3c9510c92ad90be77f10848f70654e29ae25011eb5219f91503b0c8349ecb), `FINALIZED`, `MAJORITY_AGREE`, leader `SUCCESS`, 3 validator agrees / 2 disagrees; criteria `met/met/met`, weights `[5,3,3]` |
+| Triggered sends | [`0x845d62ccb2cd588ed779193f0af9d64ca28ad84eb5e53c769f1a6c731bfea658`](https://explorer-studio.genlayer.com/tx/0x845d62ccb2cd588ed779193f0af9d64ca28ad84eb5e53c769f1a6c731bfea658), [`0x50c57fe8a239fe159d014de0ed7a0fd864506a64fe923190bbaf8de0991df3e0`](https://explorer-studio.genlayer.com/tx/0x50c57fe8a239fe159d014de0ed7a0fd864506a64fe923190bbaf8de0991df3e0), [`0xc35c8ebd93fa5aef60263527d3f4e26a8a1864ef809975bfad7fac8b80fda444`](https://explorer-studio.genlayer.com/tx/0xc35c8ebd93fa5aef60263527d3f4e26a8a1864ef809975bfad7fac8b80fda444), each `FINALIZED` with `NO_MAJORITY` |
+
+The final `get_project(1)` readback is `SETTLEMENT_EMITTED`, `completion=true`, criteria `met/met/met`, `verified_source_status=VERIFIED`, source digest equal to the registered digest, weights `[5,3,3]`, and amounts `454545454545456`, `272727272727272`, `272727272727272` wei. Accounting is `active_escrow_wei=0`, `project_count=1`, `total_dispatched_wei=1000000000000000`. The contract's `EMITTED_UNVERIFIED` settlement label is correct: the three child messages were emitted, but their own consensus did not execute the transfers. No beneficiary balance increase is claimed for this current run. This is the required source-verification evidence and a real fail-closed child-delivery result, not a fabricated payment success.
+
 ## Historical contract 0x49 evidence
 
 The older `0x49a635...` deployment is **HISTORICAL**, not current. Its project 2 funded `90000000000000000` wei and evaluated with `[5,3,3]`; the old evaluation was [`0xfa0f5ead76400df101bd1d2b4219312bde47c4d229eb4a3d150041cd93b6c8a8`](https://explorer-studio.genlayer.com/tx/0xfa0f5ead76400df101bd1d2b4219312bde47c4d229eb4a3d150041cd93b6c8a8), with old child transfers [`0x9bdee49c353b52cd900027322f94202a7e6a8acf1bdf90ae8bf6715415e9d875`](https://explorer-studio.genlayer.com/tx/0x9bdee49c353b52cd900027322f94202a7e6a8acf1bdf90ae8bf6715415e9d875), [`0x936c2e734e5a8070ef2ff521302c8609122581c3507d0655fc0f4ff71c902345`](https://explorer-studio.genlayer.com/tx/0x936c2e734e5a8070ef2ff521302c8609122581c3507d0655fc0f4ff71c902345) and [`0x57288bdc5ab30007e348a0496300549812359ba79f74eff8519e02bce8d3cc03`](https://explorer-studio.genlayer.com/tx/0x57288bdc5ab30007e348a0496300549812359ba79f74eff8519e02bce8d3cc03). Exact old balance deltas were `40909090909090910`, `24545454545454545`, and `24545454545454545` wei. These hashes target `0x49...`, not the current contract.
@@ -91,11 +115,11 @@ Attempts [A](https://explorer-studio.genlayer.com/tx/0x5871890bcccbcb55d1b3980f2
 
 ## Vercel production
 
-The existing Vercel project `creditsplit` uses `frontend/` as its Root Directory and team `team_zqLSqTEYuxYTP42pCCst09F3`. The current production build points `NEXT_PUBLIC_CONTRACT_ADDRESS` at the current contract.
+The existing Vercel project `creditsplit` uses `frontend/` as its Root Directory and team `team_zqLSqTEYuxYTP42pCCst09F3`. The repository configuration now points at the current contract. Updating the existing production environment and alias is pending one-time authorization to that Vercel team; no new project is being created.
 
 - Public alias: [`https://creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app)
-- Current Ready deployment: [`https://creditsplit-1wpw7qnkm-delealufejoel-4184s-projects.vercel.app`](https://creditsplit-1wpw7qnkm-delealufejoel-4184s-projects.vercel.app)
+- Last documented Ready deployment: [`https://creditsplit-1wpw7qnkm-delealufejoel-4184s-projects.vercel.app`](https://creditsplit-1wpw7qnkm-delealufejoel-4184s-projects.vercel.app)
 - Inspect: [`https://vercel.com/delealufejoel-4184s-projects/creditsplit/3f8JPTkTEj96Mtd41kM2bhQhgzk9`](https://vercel.com/delealufejoel-4184s-projects/creditsplit/3f8JPTkTEj96Mtd41kM2bhQhgzk9)
-- Status: `Ready`, Node `22.x`, public HTTP check `200`.
+- Status: last documented `Ready`, Node `22.x`, public HTTP check `200`; current-contract environment update is not claimed until team authorization succeeds.
 
-GitHub auto-deployment is not connected; this is the existing authorized direct-source project, not a replacement project. No frontend or contract deployment was performed for this documentation-only reconciliation.
+GitHub auto-deployment is not connected; this is the existing direct-source project, not a replacement project. The frontend source/build is locally verified against the new address, but the production alias must be redeployed after team authorization.

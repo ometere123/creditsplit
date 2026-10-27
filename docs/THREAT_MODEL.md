@@ -19,7 +19,8 @@ Sponsor manipulating final assembly; invited contributor copying prior submissio
 7. Evidence anchors must be exact bounded, content-bearing excerpts from registered packet text; token-boundary matching rejects trivial anchors while allowing concise technical corrections. Exact later cross-slot copies are capped per cited packet by registration sequence; a separate original packet is not suppressed, and paraphrases remain semantic validator decisions.
 8. Incomplete delivery separates informational merit from settlement: any unmet criterion forces settlement weights to zero and refunds the sponsor. A failed consensus leaves frozen evidence and escrow unchanged.
 9. `EMITTED_UNVERIFIED` transfer label makes the lack of delivery callback explicit. Inspect child messages and actual wallet balances.
-10. The current hardened release has a live successful three-wallet lifecycle with an accepted [5,3,3] decision, exact child sends and beneficiary balance proof. The assembler-omission, failed incomplete evaluation, same-evidence retry and refund-child evidence belong to the historical `0x49...` deployment and are labeled that way in the deployment ledger. Current negative browser evidence includes a duplicate response that finalized with execution `ERROR` and changed no state.
+10. Optional verified-source mode accepts only a raw GitHub file pinned to a commit plus a sponsor-registered SHA-256 digest. Leader and validators independently retrieve and verify the same bytes, classify factual claims as supported/contradicted/unverifiable, and fail closed on retrieval or digest mismatch. Retrieved source is untrusted evidence and cannot override validator instructions. This strengthens factual corroboration but does not establish human authorship, universal originality or non-collusion.
+11. The current `0xEFf0...` release has a live three-wallet source-verified lifecycle with an accepted [5,3,3] decision. Its three child sends finalized `NO_MAJORITY`, so no beneficiary credit is claimed for that run. The successful child/balance payout, assembler-omission, failed incomplete evaluation, same-evidence retry and refund-child evidence belong to historical deployments and are labeled that way in the deployment ledger. Current negative evidence includes child-transfer consensus failure, while historical browser evidence includes a duplicate response that finalized with execution `ERROR` and changed no state.
 
 ## Known limits, not hidden assumptions
 
@@ -27,6 +28,7 @@ Sponsor manipulating final assembly; invited contributor copying prior submissio
 - Public contract storage is not a confidential document vault.
 - Free-form textual assessment cannot promise unanimous validators; a failed retry can still leave funds frozen because there is no safe sponsor-only cancellation mechanism.
 - EOA external-message failure may not refund principal. Do not blindly replay and double-pay.
+- A verified public reference can be stale, incomplete or correct while a contribution is still wrong; source verification is bounded corroboration, not an identity or plagiarism oracle. If retrieval fails or the digest does not match, the assessment fails closed.
 - No server or indexer: app reads bounded on-chain pages and can incur RPC delay.
 - Cross-project accounting invariants must be confirmed in GenVM and live transactions.
 - Wallet registration is on-chain authentication only; it does not establish real-world identity, originality or Sybil resistance.

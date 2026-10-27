@@ -14,12 +14,13 @@ Creditsplit Python Intelligent Contract (one deployment)
       ├─ Single assembler output or deterministic deadline fallback
       ├─ Signed responses, acknowledgment deadline, frozen evidence SHA-256
       ├─ GenVM run_nondet_unsafe leader + independently rerun validators with exact packet anchors
+      ├─ Optional commit-pinned verified source retrieval + SHA-256/factual-status checks
       ├─ Validator-agreed materiality classifications → deterministic 0/1/3/5 bands
       ├─ Deterministic wei allocation + on-finalization EOA GEN messages
       └─ Public project list, full history, reputation + accounting views
 ```
 
-The authoritative current deployment is `0x03EEC54406D220ce484002A1A493d73D09b7F57C` on StudioNet `61999`, source SHA-256 `794231E47E0EF7873E6F14A4BBC9FC7B0D1CAF94A2C9BBDE9DBFD85A52612818`. Earlier addresses and their lifecycles are historical evidence only; they are not interchangeable with the current frontend target.
+The authoritative current deployment is `0xEFf0D2023Fa34Ae150BBa77B906b22384920Dd44` on StudioNet `61999`, source SHA-256 `ED1E43BD4E32056ADF6D6DD0ED6CA0F126887391A4FC53D159A1644AF92C226F`. Earlier addresses and their lifecycles are historical evidence only; they are not interchangeable with the current frontend target.
 
 ## States
 
@@ -39,4 +40,4 @@ Views return UTF-8 JSON strings for ABI simplicity. `list_projects` returns boun
 
 ## Trust boundaries
 
-The contract alone controls state, eligibility, evidence freeze, transfer amounts, and accounting. Browser state controls **nothing authoritative**. The leader's narrative is not binding; validators independently reassess the same actual passages and frozen criteria. Only agreed payment-controlling classifications and contract-derived weights govern settlement. Prompts never fetch mutable external sources. Each wallet acts as its own authenticated on-chain principal; no identity/originality outside signed submissions is claimed.
+The contract alone controls state, eligibility, evidence freeze, transfer amounts, and accounting. Browser state controls **nothing authoritative**. The leader's narrative is not binding; validators independently reassess the same actual passages and frozen criteria. Only agreed payment-controlling classifications and contract-derived weights govern settlement. The default workflow is closed evidence. The optional verified-source workflow accepts only a raw GitHub file pinned to a commit and a sponsor-registered SHA-256 digest; both leader and validators retrieve and verify that exact content through GenLayer nondeterministic web access. Source verification can support, contradict or leave factual claims unverifiable, but it does not establish human identity, originality or non-collusion. Each wallet acts as its own authenticated on-chain principal.

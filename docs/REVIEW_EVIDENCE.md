@@ -6,15 +6,15 @@ This ledger separates the authoritative current release from historical deployme
 
 | Item | Evidence |
 | --- | --- |
-| Source-release commit | [`e6e435b50d3292bd34e918f9e0254910f32377b3`](https://github.com/ometere123/creditsplit/commit/e6e435b50d3292bd34e918f9e0254910f32377b3) |
-| Contract source SHA-256 | `794231E47E0EF7873E6F14A4BBC9FC7B0D1CAF94A2C9BBDE9DBFD85A52612818` |
-| Current contract | [`0x03EEC54406D220ce484002A1A493d73D09b7F57C`](https://explorer-studio.genlayer.com/address/0x03EEC54406D220ce484002A1A493d73D09b7F57C) |
-| Deployment | [`0x64f7f36cbc2eb8349e6e68850cc00bf839fecb7251c05941b1b67a62d95d405f`](https://explorer-studio.genlayer.com/tx/0x64f7f36cbc2eb8349e6e68850cc00bf839fecb7251c05941b1b67a62d95d405f), FINALIZED / MAJORITY_AGREE / SUCCESS |
+| Source-release commit | [`ee4d69fb4dafef90e142ead48814422dd7568a41`](https://github.com/ometere123/creditsplit/commit/ee4d69fb4dafef90e142ead48814422dd7568a41) |
+| Contract source SHA-256 | `ED1E43BD4E32056ADF6D6DD0ED6CA0F126887391A4FC53D159A1644AF92C226F` |
+| Current contract | [`0xEFf0D2023Fa34Ae150BBa77B906b22384920Dd44`](https://explorer-studio.genlayer.com/address/0xEFf0D2023Fa34Ae150BBa77B906b22384920Dd44) |
+| Deployment | [`0xdb0d4fa219df9a1150687a2672fc035b64f321d5aff74b2ad6be47ab88ba95fa`](https://explorer-studio.genlayer.com/tx/0xdb0d4fa219df9a1150687a2672fc035b64f321d5aff74b2ad6be47ab88ba95fa), FINALIZED / MAJORITY_AGREE / SUCCESS |
 | Network | StudioNet chain `61999`, `https://studio.genlayer.com/api` |
 | Production | [`https://creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app) |
-| Exact-SHA source-release CI | [run 40213726715](https://github.com/ometere123/creditsplit/actions/runs/40213726715), successful at the exact source-release commit |
+| Exact-SHA source-release CI | Pending the final pushed closeout commit; no CI URL is claimed until GitHub reports success for that exact SHA |
 
-The contract source last changed at `3a745ab95795634769e9bd02993e58a52c10a71d`; the final main commit is a documentation/production-link closeout after that source-matched deployment. gen_getContractCode returned 32,875 bytes with the exact source hash above, and the registered schema reports 17 methods (5 views, 12 writes).
+The contract source last changed at `ee4d69fb4dafef90e142ead48814422dd7568a41`; `gen_getContractCode` returned 40,121 bytes with the exact source hash above, and the registered schema reports 18 methods (5 views, 13 writes), including the optional verified-source creation path. This document is updated after the source-matched deployment; the final main commit may add only the release ledger/configuration and CI evidence.
 
 ## B. Implemented contract controls
 
@@ -24,6 +24,7 @@ The current source and passing regression suites verify:
 - immutable packet/revision history, authenticated cross-contributor references and canonical evidence freezing;
 - independent leader/validator assessment of the actual packet text, revisions, final artifact, criteria, responses and omissions;
 - assembler references as authenticated claims rather than an economic veto;
+- optional commit-pinned verified-source retrieval with digest validation and supported/contradicted/unverifiable factual status;
 - informative bounded anchors, packet-specific exact-copy ordering and no clean-reference concealment;
 - informational merit separated from settlement weights for incomplete work;
 - deterministic 0/1/3/5 bands, integer allocation, exact pool conservation, replay protection and project-local escrow;
@@ -32,9 +33,9 @@ The current source and passing regression suites verify:
 
 create_project() is backward-compatible and uses generic default criteria; it follows the same escrow, authorization, freeze, consensus and settlement path as create_project_with_criteria(). The preferred frontend path is the custom-criteria method because it gives a sponsor project-specific requirements. The legacy method is less expressive, not a weaker financial-security path.
 
-## C. Current contract live lifecycle: project 2
+## C. Historical contract 0x03EEC live lifecycle: project 2
 
-Project 2 is the current-contract demonstration. It was performed through the production Vercel application in Convert Chrome with Rabby, switching among the authorized sponsor and the three browser invitees:
+Project 2 is the historical `0x03EEC...` demonstration. It was performed through the production Vercel application in Convert Chrome with Rabby, switching among the authorized sponsor and the three browser invitees:
 
 - A 0x7e2a8d765e0e346C451109eb42D92f61FBdbfd4b
 - B 0x1F21Be13E3Fd277C5D3115b7Fb8135de19A427F5
@@ -54,7 +55,13 @@ The final get_project(2) readback is SETTLEMENT_EMITTED, all three criteria met,
 
 The duplicate C response transaction [`0x943d1634410b73d1a888820cf2a100da7e11287fa5929d51d78810d2d9bad221`](https://explorer-studio.genlayer.com/tx/0x943d1634410b73d1a888820cf2a100da7e11287fa5929d51d78810d2d9bad221) finalized with execution ERROR after the response was already sealed. It changed no state, and the later successful readback was not mistaken for a second write.
 
-## D. Historical live evidence
+## D. Current contract verified-source lifecycle: project 1
+
+The current contract `0xEFf0...Dd44` was exercised with a commit-pinned reference at [`docs/CONSENSUS.md`](https://raw.githubusercontent.com/ometere123/creditsplit/2767a0ac558a0d52828ee94f015e26dee6dfb18f/docs/CONSENSUS.md), digest `e68b6d5448dd668219c8fcb13eeee38f0fbd0f6dafd2e355039ea0fc7f68b112`. Creation [`0x549443ee02014ea72065af41af7ccfc76e243d066c0e35ace9d874633fd9b683`](https://explorer-studio.genlayer.com/tx/0x549443ee02014ea72065af41af7ccfc76e243d066c0e35ace9d874633fd9b683) credited a `0.001 GEN` pool. Three CLI-authorized contributor wallets joined, submitted actual text (including a correction reference), finished, assembled, responded, froze and evaluated; the exact ledger is in `docs/DEPLOYMENT.md`.
+
+Evaluation [`0xcaa3c9510c92ad90be77f10848f70654e29ae25011eb5219f91503b0c8349ecb`](https://explorer-studio.genlayer.com/tx/0xcaa3c9510c92ad90be77f10848f70654e29ae25011eb5219f91503b0c8349ecb) finalized `MAJORITY_AGREE` with leader `SUCCESS`, 3 agree/2 disagree, all three criteria `met`, and accepted weights `[5,3,3]`. Readback recorded `VERIFIED` source status and allocations `454545454545456`, `272727272727272`, `272727272727272` wei. The emitted child transactions [`0x845d62ccb2cd588ed779193f0af9d64ca28ad84eb5e53c769f1a6c731bfea658`](https://explorer-studio.genlayer.com/tx/0x845d62ccb2cd588ed779193f0af9d64ca28ad84eb5e53c769f1a6c731bfea658), [`0x50c57fe8a239fe159d014de0ed7a0fd864506a64fe923190bbaf8de0991df3e0`](https://explorer-studio.genlayer.com/tx/0x50c57fe8a239fe159d014de0ed7a0fd864506a64fe923190bbaf8de0991df3e0) and [`0xc35c8ebd93fa5aef60263527d3f4e26a8a1864ef809975bfad7fac8b80fda444`](https://explorer-studio.genlayer.com/tx/0xc35c8ebd93fa5aef60263527d3f4e26a8a1864ef809975bfad7fac8b80fda444) each finalized `NO_MAJORITY`. No recipient balance increase is claimed for this current run. This is evidence of actual external-source retrieval and consensus over the source-augmented snapshot, plus honest child-transfer failure handling.
+
+## E. Historical live evidence
 
 The earlier successful [5,3,3] settlement, incomplete-deliverable refund and same-evidence retry belong to historical contract 0x49a63512878c639C8205c7f0c32eeFa78E8aBF3f, source SHA 0AA8AACDDF5E65B72B60BFFC057F8393B46B586B7B60185C815CD1D50DDDCCAF, deployment [`0x2016405aad3d64cec94db8065c02d647b9019d7f28d9d5dd0fe75b4f3fca435b`](https://explorer-studio.genlayer.com/tx/0x2016405aad3d64cec94db8065c02d647b9019d7f28d9d5dd0fe75b4f3fca435b). They are preserved as historical evidence and are not current-contract results:
 
@@ -64,30 +71,30 @@ The earlier successful [5,3,3] settlement, incomplete-deliverable refund and sam
 
 This historical record proves that a disagreement can fail closed and that a later evaluation over unchanged evidence can resolve to a refund. It does not promise universal recovery for future validator disagreement.
 
-## E. Browser, SDK and automated evidence
+## F. Browser, SDK and automated evidence
 
-- **Manual connected-wallet QA:** Convert Chrome profile, injected Rabby, StudioNet chain 61999, production Vercel application. Project 1 create/fund [`0x96f69cb434c0291a3b314b9d74e3f8204eec57c8888a7ac8807274eecaa20474`](https://explorer-studio.genlayer.com/tx/0x96f69cb434c0291a3b314b9d74e3f8204eec57c8888a7ac8807274eecaa20474) finalized and read back after refresh/reconnect. Project 2 contributor joins, authored packets, completion, assembly, responses, freeze, evaluation and displayed rewards were also signed through the production UI; explorer from addresses match the three invitees above.
+- **Manual connected-wallet QA:** Convert Chrome profile, injected Rabby, StudioNet chain 61999, production Vercel application. The signed create/fund transaction [`0x96f69cb434c0291a3b314b9d74e3f8204eec57c8888a7ac8807274eecaa20474`](https://explorer-studio.genlayer.com/tx/0x96f69cb434c0291a3b314b9d74e3f8204eec57c8888a7ac8807274eecaa20474) targeted the historical `0x03EEC...` deployment and was read back after refresh/reconnect. The historical project 2 joins, packets, assembly, responses, freeze, evaluation and displayed rewards were also signed through the production UI. This is not browser evidence for the new `0xEFf0...` source-verified contract.
 - **SDK/RPC evidence:** Direct readbacks, source-byte comparison, contract schema, child Send rows, recipient balance checks and the exact current project/accounting state were independently verified through StudioNet RPC/Explorer.
 - **Automated browser evidence:** two Playwright smoke projects (desktop and mobile) cover navigation/form rendering. They are not a substitute for the manual wallet-signing record.
-- **Recovery behavior:** the frontend scopes pending records by chain, wallet, contract, method and transaction hash; it reconciles finalized execution outcomes, clears permanently failed finalized records, refreshes after account/network changes and prevents a duplicate write while a transaction is unresolved. The duplicate response above is a live negative example that did not corrupt state.
+- **Recovery behavior:** the frontend scopes pending records by chain, wallet, contract, method and transaction hash; it reconciles finalized execution outcomes, clears permanently failed finalized records, refreshes after account/network changes and prevents a duplicate write while a transaction is unresolved. The duplicate response above is a live historical negative example that did not corrupt state. The current source-mode lifecycle was CLI/RPC-driven, not a browser-wallet proof.
 
 No seed phrase, private key, keystore password or browser secret is included in the repository or this ledger.
 
-## F. Refund and disagreement status
+## G. Refund and disagreement status
 
 | Scenario | Status | Evidence |
 | --- | --- | --- |
-| Current-contract recruitment-expiry refund | Not yet executed; project 1 was not eligible on the verification date | Project 1 due 2026-10-27T14:11:29Z; no premature broadcast |
-| Current-contract incomplete-deliverable refund | Implemented and covered by offline/Direct Mode; no current-contract live receipt | Regression tests verify informational merit with settlement weights [0,0,0] |
+| Current-contract recruitment-expiry refund | Not executed | The source-mode project recruited all three wallets; no current-contract recruitment-refund receipt exists |
+| Current-contract incomplete-deliverable refund | Implemented and covered by offline/Direct Mode; no current live receipt | Regression tests verify informational merit with settlement weights [0,0,0] |
 | Historical incomplete-deliverable refund | Verified | Historical 0x49 retry and refund child above |
 | Historical inconclusive consensus | Verified fail-closed | Historical failed evaluation left frozen evidence/escrow unchanged before retry |
-| Current-contract successful retry after disagreement | Not repeated; no disagreement occurred in current project 2 | Same-evidence retry behavior remains covered by tests and historical live evidence |
+| Current-contract successful retry after disagreement | Not repeated; current source-mode project 1 reached an accepted outcome on its first evaluation | Same-evidence retry behavior remains covered by tests and historical live evidence |
 
-## G. Readiness assessment
+## H. Readiness assessment
 
-- **GenLayer Fit:** live current project 2 shows an accepted nondeterministic assessment over actual frozen packet text and criteria; the evidence does not prove external authorship.
-- **Intelligent Contract Quality:** the targeted attribution, duplicate, anchor, completion/refund and deterministic-settlement controls are implemented and regression-tested; external EOA delivery remains callbackless and disagreement can remain fail-closed.
-- **Engineering Quality:** pinned tests, semantic lint, exact source registration, live RPC readbacks and exact-SHA CI are evidenced. Root CLI development advisories remain separately reported.
-- **Frontend/UX:** the production application has manual connected-wallet create/fund and full current lifecycle evidence plus desktop/mobile smoke coverage; fully automated wallet-extension testing and a current-contract live recruitment/incomplete-refund receipt are not claimed.
+- **GenLayer Fit:** the current contract has a live source-augmented assessment over frozen participant evidence plus a commit-pinned external reference; the evidence still does not prove human authorship, universal originality or non-collusion.
+- **Intelligent Contract Quality:** the targeted attribution, duplicate, anchor, completion/refund and deterministic-settlement controls are implemented and regression-tested; the current run exposed the callbackless child-transfer limitation honestly and disagreement can remain fail-closed.
+- **Engineering Quality:** pinned tests, semantic lint, exact source registration, live RPC readbacks and source-mode consensus evidence are present; final exact-SHA CI and Vercel configuration still require publication/authorization reconciliation.
+- **Frontend/UX:** the production application has manual connected-wallet evidence on the historical deployment plus desktop/mobile smoke coverage; browser-wallet QA against the new source-verified address and a current-contract live refund/payout are not claimed.
 
-Reviewers should inspect the source, final CI run, deployment receipt, current project 2 readback, parent/child records and recipient accounts directly. This ledger does not award portal scores.
+Reviewers should inspect the source, final CI run, deployment receipt, current source-mode project 1 readback, parent/child records and historical recipient accounts directly. This ledger does not award portal scores.

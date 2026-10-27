@@ -8,6 +8,7 @@
 | --- | --- |
 | `create_project(title, brief, a, b, c, assembler_slot)` payable | Backward-compatible path using the three default criteria. The sponsor funds a positive native-GEN pool and registers exactly three distinct non-sponsor wallets. |
 | `create_project_with_criteria(title, brief, criteria_json, a, b, c, assembler_slot)` payable | Preferred path. Locks exactly three bounded UTF-8 acceptance criteria and adds the principal once to `active_escrow`. |
+| `create_project_with_verified_source(title, brief, criteria_json, source_url, source_digest, a, b, c, assembler_slot)` payable | Optional factual-evidence path. Locks the same three criteria plus a raw GitHub file URL pinned to a 40-character commit and a 64-character SHA-256 digest. GenLayer independently retrieves and verifies the bytes during assessment; it does not prove authorship or originality. |
 | `join_project(id)` | An invited wallet joins its own immutable slot before the 48-hour recruitment deadline. All three joins activate the project. |
 | `submit_contribution(id, content)` | A joined contributor appends at most two immutable bounded UTF-8 packets. The packet text is the work itself. |
 | `submit_contribution_with_references(id, content, references_json)` | Same packet path with up to three references to already registered packets. References authenticate correction/build-on relationships but do not prove real-world authorship. Each packet receives a contract registration sequence. |
@@ -23,7 +24,7 @@
 
 ## Assessment and settlement rules
 
-Each assessment contains `relevance`, `distinct`, `correctness`, `material_effect`, `attribution_consistent`, `evidence_ids`, exact bounded `evidence_anchors`, and a bounded justification. Positive work must cite the contributor's own packet. Anchors must be exact normalized packet excerpts, match on token boundaries, and contain identifiable content; isolated articles/stopwords such as `The` are rejected, while concise technical corrections remain eligible. The contract derives bands `0/1/3/5`; model-provided weights, amounts and recipients are ignored.
+Each assessment contains `relevance`, `distinct`, `correctness`, `material_effect`, `attribution_consistent`, `factual_status`, `evidence_ids`, exact bounded `evidence_anchors`, and a bounded justification. Positive work must cite the contributor's own packet. Anchors must be exact normalized packet excerpts, match on token boundaries, and contain identifiable content; isolated articles/stopwords such as `The` are rejected, while concise technical corrections remain eligible. In verified-source mode, `factual_status` is `supported`, `contradicted` or `unverifiable`; positive credit is not allowed for contradicted or unverifiable factual work. The contract derives bands `0/1/3/5`; model-provided weights, amounts and recipients are ignored.
 
 An exact normalized packet copied later across slots is capped at supporting band `1` only when that specific packet is part of the accepted supporting evidence; earlier registered work and a separate original packet from the same contributor remain assessable. Citing an unrelated clean packet cannot hide a copied cited packet. Substantial paraphrase is not rejected by string equality and remains a validator judgment. A valid high classification does not require the assembler to have included that packet in `source_refs`.
 
@@ -39,4 +40,4 @@ Completion is independent of merit. If all three criteria are met and the final 
 
 ## Current deployment
 
-The verified current address is [`0x03EEC54406D220ce484002A1A493d73D09b7F57C`](https://explorer-studio.genlayer.com/address/0x03EEC54406D220ce484002A1A493d73D09b7F57C). Its source provenance and live transaction ledger are in [`docs/DEPLOYMENT.md`](DEPLOYMENT.md) and [`docs/REVIEW_EVIDENCE.md`](REVIEW_EVIDENCE.md). The previous address and its completed lifecycle remain historical evidence.
+The verified current address is [`0xEFf0D2023Fa34Ae150BBa77B906b22384920Dd44`](https://explorer-studio.genlayer.com/address/0xEFf0D2023Fa34Ae150BBa77B906b22384920Dd44), source SHA-256 `ED1E43BD4E32056ADF6D6DD0ED6CA0F126887391A4FC53D159A1644AF92C226F`. Its source provenance and live transaction ledger are in [`docs/DEPLOYMENT.md`](DEPLOYMENT.md) and [`docs/REVIEW_EVIDENCE.md`](REVIEW_EVIDENCE.md). The previous `0x03EEC...` address and its completed payout lifecycle remain historical evidence.
