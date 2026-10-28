@@ -16,6 +16,7 @@ export type Assessment = {
   justification: string;
 };
 export type Decision = { complete: boolean; criteria_status: CriterionStatus[]; source_status: 'verified'|'not_used'; source_digest: string; assessments: Assessment[]; informational_weights: number[]; reason: string };
+export type SettlementPresentation = 'PAYMENT_EMITTED'|'GEN_CREDITED'|'BALANCE_INDEPENDENTLY_VERIFIED'|'VERIFICATION_PENDING'|'TRANSFER_REQUIRES_INVESTIGATION';
 export type Project = {
   id: number; title: string; brief: string; criteria: string[]; sponsor: string; contributors: string[];
   assembler_slot: number; joined: boolean[]; complete: boolean[];
@@ -29,6 +30,11 @@ export type Project = {
   unresolved_refund_approvals?: boolean[];
   settlement: string; settlement_at: number;
 };
+export function settlementPresentation(project: Pick<Project,'settlement'|'status'>): SettlementPresentation {
+  if (project.settlement === 'EMITTED_UNVERIFIED' && ['SETTLEMENT_EMITTED','REFUND_EMITTED'].includes(project.status)) return 'PAYMENT_EMITTED';
+  if (project.settlement === 'NOT_EMITTED') return 'VERIFICATION_PENDING';
+  return 'TRANSFER_REQUIRES_INVESTIGATION';
+}
 export type ProjectPreview = Pick<Project,'id'|'title'|'brief'|'status'|'pool_wei'|'sponsor'|'joined'>;
 export type Profile = { projects: number; points: number; earned_wei: string };
 export const EMPTY_PROFILE: Profile = {projects:0,points:0,earned_wei:'0'};
@@ -45,6 +51,15 @@ export function formatGen(wei: string | bigint): string {
   const major = amount/10n**18n;
   const fraction = (amount%10n**18n).toString().padStart(18,'0').slice(0,4).replace(/0+$/,'');
   return major.toLocaleString('en-US')+(fraction?'.'+fraction:'');
+}
+export function formatGenExact(wei: string | bigint): string {
+  const amount = BigInt(wei || '0');
+  const major = amount/10n**18n;
+  const fraction = (amount%10n**18n).toString().padStart(18,'0').replace(/0+$/,'');
+  return major.toLocaleString('en-US')+(fraction?'.'+fraction:'');
+}
+export function sumWei(values: readonly (string | bigint)[]): bigint {
+  return values.reduce<bigint>((total,value)=>total+BigInt(String(value)),0n);
 }
 export function shortAddress(a: string): string { return a ? a.slice(0,6)+'…'+a.slice(-4):'—'; }
 export function formatDate(value: number): string { return value ? new Date(value*1000).toLocaleString() : 'Not scheduled'; }
