@@ -165,9 +165,19 @@ function asReceiptRecord(value:unknown):ReceiptRecord|null {
 
 function isBenignQuorumCancellation(value:ReceiptRecord|null):boolean {
   if(!value||value.execution_result!=='ERROR'||value.vote!=='idle') return false;
-  if(value.error_code!=='CONSENSUS_VALIDATOR_QUORUM_REACHED') return false;
-  const rawError=asReceiptRecord(value.raw_error);
-  return Array.isArray(rawError?.causes)&&rawError.causes.includes('VALIDATOR_QUORUM_REACHED');
+  const genvmResult=asReceiptRecord(value.genvm_result);
+  const errorCodes=[value.error_code,genvmResult?.error_code]
+    .filter((code):code is string=>typeof code==='string');
+  if(!errorCodes.includes('CONSENSUS_VALIDATOR_QUORUM_REACHED')) return false;
+
+  // The full genlayer-js receipt nests this diagnostic under genvm_result.
+  // If a raw error is present, require it to independently identify the
+  // same quorum cancellation; arbitrary validator errors stay failures.
+  const rawErrors=[value.raw_error,genvmResult?.raw_error]
+    .map(asReceiptRecord)
+    .filter((error):error is ReceiptRecord=>!!error);
+  if(!rawErrors.length) return true;
+  return rawErrors.some(error=>Array.isArray(error.causes)&&error.causes.includes('VALIDATOR_QUORUM_REACHED'));
 }
 
 /**

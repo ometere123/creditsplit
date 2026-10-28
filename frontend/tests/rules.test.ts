@@ -64,6 +64,20 @@ describe('transaction recovery scope',()=>{
       ]
     }
   })).toBe(true));
+  it('accepts the full genlayer-js nested quorum-cancellation receipt shape',()=>expect(isSuccessfulFinalizedReceipt({
+    status:7,
+    result:6,
+    consensus_data:{
+      leader_receipt:[{execution_result:'SUCCESS'}],
+      validators:[
+        {execution_result:'SUCCESS',vote:'agree'},
+        {execution_result:'ERROR',vote:'idle',genvm_result:{
+          error_code:'CONSENSUS_VALIDATOR_QUORUM_REACHED',
+          raw_error:{fatal:false,causes:['VALIDATOR_QUORUM_REACHED']}
+        }}
+      ]
+    }
+  })).toBe(true));
   it('rejects a validator error that is not the protocol quorum cancellation',()=>expect(isSuccessfulFinalizedReceipt({
     statusName:'FINALIZED',
     resultName:'MAJORITY_AGREE',
