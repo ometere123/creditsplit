@@ -16,6 +16,7 @@ export type Assessment = {
   justification: string;
 };
 export type Decision = { complete: boolean; criteria_status: CriterionStatus[]; source_status: 'verified'|'not_used'; source_digest: string; assessments: Assessment[]; informational_weights: number[]; reason: string };
+export type SettlementPresentation = 'PAYMENT_EMITTED'|'GEN_CREDITED'|'BALANCE_INDEPENDENTLY_VERIFIED'|'VERIFICATION_PENDING'|'TRANSFER_REQUIRES_INVESTIGATION';
 export type Project = {
   id: number; title: string; brief: string; criteria: string[]; sponsor: string; contributors: string[];
   assembler_slot: number; joined: boolean[]; complete: boolean[];
@@ -29,6 +30,11 @@ export type Project = {
   unresolved_refund_approvals?: boolean[];
   settlement: string; settlement_at: number;
 };
+export function settlementPresentation(project: Pick<Project,'settlement'|'status'>): SettlementPresentation {
+  if (project.settlement === 'EMITTED_UNVERIFIED' && ['SETTLEMENT_EMITTED','REFUND_EMITTED'].includes(project.status)) return 'PAYMENT_EMITTED';
+  if (project.settlement === 'NOT_EMITTED') return 'VERIFICATION_PENDING';
+  return 'TRANSFER_REQUIRES_INVESTIGATION';
+}
 export type ProjectPreview = Pick<Project,'id'|'title'|'brief'|'status'|'pool_wei'|'sponsor'|'joined'>;
 export type Profile = { projects: number; points: number; earned_wei: string };
 export const EMPTY_PROFILE: Profile = {projects:0,points:0,earned_wei:'0'};

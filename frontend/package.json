@@ -8,6 +8,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --config vitest.config.mjs",
+    "test:delivery": "node --test tests/verify-delivery.test.mjs",
     "test:e2e": "playwright test",
     "test:e2e:connected": "playwright test --config=playwright.connected.config.ts",
     "verify:delivery": "node scripts/verify-delivery.mjs"

@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {confirmedTransactionStorageKey,isSuccessfulFinalizedReceipt,makeConfirmedTransaction,makeSubmittedTransaction,markConfirmedTransactionSynchronized,parseConfirmedTransaction,parseSubmittedTransaction,reconcileConfirmedRead,recoveryMatchesWallet,submittedTransactionStorageKey} from '../lib/chain';
-import {parseGen,formatGen,bytes,validateCriteria,validateProjectInput,validateVerifiedSource} from '../lib/types';
+import {parseGen,formatGen,bytes,settlementPresentation,validateCriteria,validateProjectInput,validateVerifiedSource} from '../lib/types';
 const a='0x'+'1'.repeat(40),b='0x'+'2'.repeat(40),c='0x'+'3'.repeat(40),s='0x'+'4'.repeat(40);
 describe('funding and input invariants',()=>{
   it('preserves exact wei',()=>expect(parseGen('1.000000000000000001')).toBe(1000000000000000001n));
@@ -103,4 +103,12 @@ describe('transaction recovery scope',()=>{
     expect(isSuccessfulFinalizedReceipt({statusName:'PENDING',resultName:'MAJORITY_AGREE',consensusData:{leader_receipt:[{execution_result:'SUCCESS'}]}})).toBe(false);
   });
   it('accepts an explicit successful execution result when present',()=>expect(isSuccessfulFinalizedReceipt({statusName:'FINALIZED',txExecutionResultName:'FINISHED_WITH_RETURN'})).toBe(true));
+});
+describe('settlement presentation',()=>{
+  it('does not call emitted settlement paid',()=>expect(settlementPresentation({settlement:'EMITTED_UNVERIFIED',status:'SETTLEMENT_EMITTED'})).toBe('PAYMENT_EMITTED'));
+  it('applies the same conservative state to sponsor refunds',()=>expect(settlementPresentation({settlement:'EMITTED_UNVERIFIED',status:'REFUND_EMITTED'})).toBe('PAYMENT_EMITTED'));
+  it('keeps unsettled projects pending and unknown states investigable',()=>{
+    expect(settlementPresentation({settlement:'NOT_EMITTED',status:'FROZEN'})).toBe('VERIFICATION_PENDING');
+    expect(settlementPresentation({settlement:'BROKEN',status:'REFUND_EMITTED'})).toBe('TRANSFER_REQUIRES_INVESTIGATION');
+  });
 });

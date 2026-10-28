@@ -59,13 +59,14 @@ npx playwright install chromium
 npm run test:e2e
 npm run test:e2e:connected
 npm run verify:delivery -- --help
+npm run test:delivery
 cp .env.example .env.local
 npm run dev
 ```
 
-`npm run test:e2e:connected` runs deterministic injected EIP-1193 fixtures for wallet/network changes, payable transaction construction, confirmed-write persistence after a failed read, read-only retry and duplicate-write protection. It is automated frontend evidence, not a replacement for Convert Chrome/Rabby or StudioNet consensus. The delivery verifier accepts a current project and transaction ledger and reports allocations separately from `EMITTED_UNVERIFIED` delivery; it only calculates a historical balance delta when both block tags are explicitly supplied.
+`npm run test:e2e:connected` runs deterministic injected EIP-1193 fixtures for wallet/network changes, payable transaction construction, confirmed-write persistence after a failed read, read-only retry and duplicate-write protection. It is automated frontend evidence, not a replacement for Convert Chrome/Rabby or StudioNet consensus. The delivery verifier accepts a current project and transaction ledger, requires official triggered-child provenance, and reports allocations separately from `EMITTED_UNVERIFIED` delivery; it only calculates a historical balance delta when both block tags are explicitly supplied, and only attributes that delta when authoritative activity evidence is also available.
 
-The repository and frontend each have a committed npm lockfile. Direct Mode pins the compatible `v0.2.16` GenVM universal bundle because `genlayer-test==0.29.2` downloads the legacy `genvm-universal.tar.xz` asset. The linter uses the same explicit version and validates the pinned `py-genlayer` hash.
+The repository and frontend each have a committed npm lockfile. `npm run test:delivery` runs the read-only payout/refund provenance verifier's adversarial fixture suite; it never signs, broadcasts or retries a transaction. The verifier requires official triggered-child evidence for a positive provenance result and reports historical balance deltas conservatively when attribution cannot be established. Direct Mode pins the compatible `v0.2.16` GenVM universal bundle because `genlayer-test==0.29.2` downloads the legacy `genvm-universal.tar.xz` asset. The linter uses the same explicit version and validates the pinned `py-genlayer` hash.
 
 Set `NEXT_PUBLIC_CONTRACT_ADDRESS=0xBfBF8E1AB95cbEfF732aa541840f55C222f2c80D` for the current verified StudioNet build. Deployment environment variables must contain **no private keys** in the frontend or Vercel configuration.
 
