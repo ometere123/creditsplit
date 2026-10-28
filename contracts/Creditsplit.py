@@ -562,6 +562,7 @@ class Creditsplit(gl.Contract):
             "packets": [[], [], []], "final_text": "", "source_refs": [],
             "next_packet_sequence": 1,
             "responses": ["", "", ""], "acknowledged": [False, False, False],
+            "unresolved_refund_approvals": [False, False, False, False],
             "pool_wei": str(int(pool)), "created_at": now, "recruit_due": now + 172800,
             "contribute_due": 0, "assemble_due": 0, "review_due": 0,
             "frozen_at": 0, "evidence_digest": "", "fallback_assembly": False,
@@ -569,7 +570,7 @@ class Creditsplit(gl.Contract):
             "verified_source_digest": verified_source_digest,
             "verified_source_status": "PENDING" if verified_source_url else "NOT_CONFIGURED",
             "status": "RECRUITING", "completion": None, "criteria_status": [], "weights": [], "amounts_wei": [],
-            "decision": None, "settlement": "NOT_EMITTED", "settlement_at": 0,
+            "decision": None, "settlement": "NOT_EMITTED", "settlement_reason": "", "settlement_at": 0,
         }
         self._save(project_id, project)
         self.active_escrow += pool
@@ -807,6 +808,7 @@ class Creditsplit(gl.Contract):
         }
         project["status"] = "SETTLEMENT_EMITTED" if result["complete"] else "REFUND_EMITTED"
         project["settlement"] = "EMITTED_UNVERIFIED"
+        project["settlement_reason"] = "COMPLETED_DELIVERABLE" if result["complete"] else "INCOMPLETE_DELIVERABLE"
         project["settlement_at"] = self._now()
         self._save(project_id, project)
         self.active_escrow -= u256(pool)
@@ -827,11 +829,47 @@ class Creditsplit(gl.Contract):
         pool = int(project["pool_wei"])
         project["status"] = "REFUND_EMITTED"
         project["settlement"] = "EMITTED_UNVERIFIED"
+        project["settlement_reason"] = "RECRUITMENT_EXPIRED"
         project["settlement_at"] = self._now()
         self._save(project_id, project)
         self.active_escrow -= u256(pool)
         self.total_dispatched += u256(pool)
         self._dispatch(project["sponsor"], pool)
+
+    @gl.public.write
+    def approve_unresolved_refund(self, project_id: u32) -> None:
+        """Close a frozen, unresolved project only with unanimous participant consent.
+
+        This is a conditional consensual exit, not a sponsor cancellation or a
+        consensus substitute. Every sponsor/contributor wallet must explicitly
+        approve the same frozen evidence before the original pool is refunded.
+        A later successful evaluation cannot be overridden because this method
+        only accepts the FROZEN state and settlement is one-way.
+        """
+        project = self._load(project_id)
+        self._require(project["status"] == "FROZEN", "unresolved refund requires frozen project")
+        actor = self._actor()
+        if actor == project["sponsor"]:
+            approval_slot = 0
+        else:
+            approval_slot = self._slot(project, actor) + 1
+        approvals = project.get("unresolved_refund_approvals", [False, False, False, False])
+        self._require(isinstance(approvals, list) and len(approvals) == 4, "invalid refund approvals")
+        self._require(not approvals[approval_slot], "refund consent already recorded")
+        approvals[approval_slot] = True
+        project["unresolved_refund_approvals"] = approvals
+        if all(approvals):
+            pool = int(project["pool_wei"])
+            project["status"] = "REFUND_EMITTED"
+            project["settlement"] = "EMITTED_UNVERIFIED"
+            project["settlement_reason"] = "UNRESOLVED_UNANIMOUS_EXIT"
+            project["settlement_at"] = self._now()
+            self._save(project_id, project)
+            self.active_escrow -= u256(pool)
+            self.total_dispatched += u256(pool)
+            self._dispatch(project["sponsor"], pool)
+        else:
+            self._save(project_id, project)
 
     @gl.public.view
     def get_project(self, project_id: u32) -> str:

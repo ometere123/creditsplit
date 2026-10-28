@@ -25,7 +25,8 @@ export type Project = {
   frozen_at: number; evidence_digest: string; fallback_assembly: boolean;
   verified_source_url?: string; verified_source_digest?: string; verified_source_status?: 'PENDING'|'VERIFIED'|'NOT_CONFIGURED'|'NOT_USED';
   status: Status; completion: null|boolean; criteria_status: CriterionStatus[]; weights: number[]; amounts_wei: string[];
-  decision: Decision|null;
+  decision: Decision|null; settlement_reason?: 'COMPLETED_DELIVERABLE'|'INCOMPLETE_DELIVERABLE'|'RECRUITMENT_EXPIRED'|'UNRESOLVED_UNANIMOUS_EXIT'|'';
+  unresolved_refund_approvals?: boolean[];
   settlement: string; settlement_at: number;
 };
 export type ProjectPreview = Pick<Project,'id'|'title'|'brief'|'status'|'pool_wei'|'sponsor'|'joined'>;

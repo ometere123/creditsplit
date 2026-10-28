@@ -9,6 +9,7 @@ export const EXPLORER = 'https://explorer-studio.genlayer.com';
 export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ?? '';
 export const configured = /^0x[a-fA-F0-9]{40}$/.test(CONTRACT_ADDRESS);
 const SUBMITTED_TX_PREFIX = 'creditsplit:submitted-tx:';
+const CONFIRMED_TX_PREFIX = 'creditsplit:confirmed-tx:';
 export const SUBMITTED_TX_KEY = 'creditsplit:submitted-tx';
 function asHash(value:string): Hash {
   if(!/^0x[a-fA-F0-9]{64}$/.test(value)) throw new Error(`Invalid transaction hash: ${value}`);
@@ -23,6 +24,12 @@ export type SubmittedTransaction = {
   method:string;
   submittedAt:number;
   legacy?:boolean;
+};
+
+export type ConfirmedTransaction = SubmittedTransaction & {
+  outcome:'CONFIRMED_SUCCESS';
+  confirmedAt:number;
+  syncStatus:'PENDING'|'SYNCED';
 };
 
 export function makeSubmittedTransaction(hash:string,wallet:string,method:string,submittedAt=Date.now()):SubmittedTransaction {
@@ -49,6 +56,58 @@ export function parseSubmittedTransaction(raw:string|null):SubmittedTransaction|
 
 export function submittedTransactionStorageKey(record:SubmittedTransaction):string {
   return `${SUBMITTED_TX_PREFIX}${record.chainId}:${record.wallet.toLowerCase()}:${record.contract.toLowerCase()}:${encodeURIComponent(record.method)}:${record.hash.toLowerCase()}`;
+}
+
+export function confirmedTransactionStorageKey(record:SubmittedTransaction):string {
+  return `${CONFIRMED_TX_PREFIX}${record.chainId}:${record.wallet.toLowerCase()}:${record.contract.toLowerCase()}:${encodeURIComponent(record.method)}:${record.hash.toLowerCase()}`;
+}
+
+export function makeConfirmedTransaction(record:SubmittedTransaction,confirmedAt=Date.now()):ConfirmedTransaction {
+  return {...record,outcome:'CONFIRMED_SUCCESS',confirmedAt,syncStatus:'PENDING'};
+}
+
+export function parseConfirmedTransaction(raw:string|null):ConfirmedTransaction|null {
+  if(!raw) return null;
+  try {
+    const parsed=JSON.parse(raw) as Partial<ConfirmedTransaction>;
+    if(parsed.outcome!=='CONFIRMED_SUCCESS'||typeof parsed.confirmedAt!=='number') return null;
+    const record=parseSubmittedTransaction(JSON.stringify(parsed));
+    return record&&!record.legacy?{...record,outcome:'CONFIRMED_SUCCESS',confirmedAt:parsed.confirmedAt,syncStatus:parsed.syncStatus==='SYNCED'?'SYNCED':'PENDING'}:null;
+  } catch { return null; }
+}
+
+export function markConfirmedTransactionSynchronized(record:ConfirmedTransaction):ConfirmedTransaction {
+  return {...record,syncStatus:'SYNCED'};
+}
+
+export async function reconcileConfirmedRead(
+  record:ConfirmedTransaction,
+  read:()=>Promise<unknown>,
+):Promise<{record:ConfirmedTransaction;synchronized:boolean;error?:string}> {
+  try {
+    await read();
+    return {record:markConfirmedTransactionSynchronized(record),synchronized:true};
+  } catch(error) {
+    return {record,synchronized:false,error:error instanceof Error?error.message:String(error)};
+  }
+}
+
+export function readConfirmedTransactions():ConfirmedTransaction[] {
+  if(typeof window==='undefined') return [];
+  const records:ConfirmedTransaction[]=[];
+  const seen=new Set<string>();
+  for(let index=0;index<window.localStorage.length;index++){
+    const key=window.localStorage.key(index);
+    if(!key?.startsWith(CONFIRMED_TX_PREFIX)) continue;
+    const record=parseConfirmedTransaction(window.localStorage.getItem(key));
+    if(record&&!seen.has(record.hash.toLowerCase())){seen.add(record.hash.toLowerCase());records.push(record);}
+  }
+  return records.sort((a,b)=>b.confirmedAt-a.confirmedAt);
+}
+
+export function rememberConfirmedTransaction(record:ConfirmedTransaction):void {
+  if(typeof window==='undefined') return;
+  window.localStorage.setItem(confirmedTransactionStorageKey(record),JSON.stringify(record));
 }
 
 export function readSubmittedTransactions():SubmittedTransaction[] {
@@ -103,14 +162,6 @@ type ReceiptRecord=Record<string,unknown>;
 function asReceiptRecord(value:unknown):ReceiptRecord|null {
   return typeof value==='object'&&value!==null?value as ReceiptRecord:null;
 }
-function receiptString(receipt:ReceiptRecord,camel:string,snake:string):string|undefined {
-  const value=receipt[camel]??receipt[snake];
-  return typeof value==='string'?value:undefined;
-}
-function receiptNumber(receipt:ReceiptRecord,key:string):number|undefined {
-  const value=receipt[key];
-  return typeof value==='number'?value:typeof value==='string'?Number(value):undefined;
-}
 
 /**
  * StudioNet's genlayer-js 1.1.8 simplified receipt omits txExecutionResultName.
@@ -121,17 +172,69 @@ function receiptNumber(receipt:ReceiptRecord,key:string):number|undefined {
 export function isSuccessfulFinalizedReceipt(value:unknown):boolean {
   const receipt=asReceiptRecord(value);
   if(!receipt) return false;
-  const status=receiptString(receipt,'statusName','status_name');
-  const finalized=status==='FINALIZED'||receiptNumber(receipt,'status')===7;
-  if(!finalized) return false;
-  const execution=receiptString(receipt,'txExecutionResultName','tx_execution_result_name');
-  if(execution) return execution===ExecutionResult.FINISHED_WITH_RETURN;
-  const result=receiptString(receipt,'resultName','result_name');
-  const consensus=asReceiptRecord(receipt.consensusData??receipt.consensus_data);
-  const leaderReceipts=consensus?.leader_receipt;
-  const leader=Array.isArray(leaderReceipts)?asReceiptRecord(leaderReceipts[0]):null;
-  const leaderExecution=leader&&typeof leader.execution_result==='string'?leader.execution_result:undefined;
-  return result==='MAJORITY_AGREE'&&leaderExecution==='SUCCESS';
+  const statusNames=[receipt.statusName,receipt.status_name].filter(value=>value!==undefined);
+  const statusNumbers=[receipt.status].filter(value=>value!==undefined).map(value=>typeof value==='number'?value:Number(value));
+  if(statusNames.some(value=>typeof value!=='string'||value!=='FINALIZED')||
+     statusNumbers.some(value=>!Number.isFinite(value)||value!==7)||
+     (!statusNames.length&&!statusNumbers.length)) return false;
+
+  const executionNames=[receipt.txExecutionResultName,receipt.tx_execution_result_name].filter(value=>value!==undefined);
+  const executionNumbers=[receipt.txExecutionResult].filter(value=>value!==undefined).map(value=>typeof value==='number'?value:Number(value));
+  if(executionNames.some(value=>value!==ExecutionResult.FINISHED_WITH_RETURN&&value!==ExecutionResult.FINISHED_WITH_ERROR&&value!==ExecutionResult.NOT_VOTED)||
+     executionNumbers.some(value=>!Number.isFinite(value)||!([0,1,2] as number[]).includes(value))||
+     (executionNames.length===2&&executionNames[0]!==executionNames[1])||
+     (executionNumbers.length===2&&executionNumbers[0]!==executionNumbers[1])||
+     (executionNames.length&&executionNumbers.length&&
+       ((executionNames[0]===ExecutionResult.FINISHED_WITH_RETURN&&executionNumbers[0]!==1)||
+        (executionNames[0]===ExecutionResult.NOT_VOTED&&executionNumbers[0]!==0)||
+        (executionNames[0]===ExecutionResult.FINISHED_WITH_ERROR&&executionNumbers[0]!==2)))) return false;
+  const explicitExecutionSuccess=executionNames.includes(ExecutionResult.FINISHED_WITH_RETURN)||executionNumbers.includes(1);
+  const explicitExecutionFailure=executionNames.some(value=>value!==ExecutionResult.FINISHED_WITH_RETURN)||executionNumbers.some(value=>value!==1);
+  if(explicitExecutionFailure) return false;
+
+  const resultNames=[receipt.resultName,receipt.result_name].filter(value=>value!==undefined);
+  const resultNumbers=[receipt.result].filter(value=>value!==undefined).map(value=>typeof value==='number'?value:Number(value));
+  const resultByNumber=['IDLE','AGREE','DISAGREE','TIMEOUT','DETERMINISTIC_VIOLATION','NO_MAJORITY','MAJORITY_AGREE','MAJORITY_DISAGREE'];
+  if(resultNames.some(value=>typeof value!=='string'||!resultByNumber.includes(value))||
+     resultNumbers.some(value=>!Number.isFinite(value)||value<0||value>7||!Number.isInteger(value))||
+     (resultNames.length===2&&resultNames[0]!==resultNames[1])||
+     (resultNumbers.length===2&&resultNumbers[0]!==resultNumbers[1])||
+     (resultNames.length&&resultNumbers.length&&resultByNumber[resultNumbers[0]]!==resultNames[0])) return false;
+  const consensusNames=resultNames.length?resultNames:[...resultNumbers.map(value=>resultByNumber[value])];
+  if(consensusNames.some(value=>value!=='MAJORITY_AGREE')) return false;
+  const explicitConsensusSuccess=consensusNames.includes('MAJORITY_AGREE');
+
+  const consensusValues=[receipt.consensusData,receipt.consensus_data].filter(value=>value!==undefined);
+  if(consensusValues.length===2&&JSON.stringify(consensusValues[0])!==JSON.stringify(consensusValues[1])) return false;
+  const consensus=consensusValues.length?asReceiptRecord(consensusValues[0]):null;
+  if(consensusValues.length&&!consensus) return false;
+  if(consensus){
+    const leaderRaw=consensus.leader_receipt;
+    if(leaderRaw!==undefined){
+      const leaders=Array.isArray(leaderRaw)?leaderRaw:[leaderRaw];
+      if(!leaders.length) return false;
+      for(const raw of leaders){
+        const leader=asReceiptRecord(raw);
+        const leaderExecution=leader?.execution_result;
+        if(typeof leaderExecution!=='string'||!['SUCCESS','FINISHED_WITH_RETURN'].includes(leaderExecution)) return false;
+      }
+    }
+    const validators=consensus.validators;
+    if(validators!==undefined){
+      if(!Array.isArray(validators)) return false;
+      for(const raw of validators){
+        const validator=asReceiptRecord(raw);
+        if(!validator) return false;
+        const executionResult=validator.execution_result;
+        if(executionResult!==undefined&&
+           (typeof executionResult!=='string'||!['SUCCESS','FINISHED_WITH_RETURN'].includes(executionResult))) return false;
+      }
+    }
+  }
+  // A simplified receipt is accepted only when it contains the complete
+  // FINALIZED + MAJORITY_AGREE + successful leader path. Full SDK receipts
+  // may omit consensus fields, but must expose FINISHED_WITH_RETURN.
+  return explicitExecutionSuccess || (explicitConsensusSuccess&&!!consensus&&Array.isArray(consensus.leader_receipt)&&consensus.leader_receipt.length>0);
 }
 
 export interface Provider { request(args:{method:string;params?:unknown[]}):Promise<unknown>;on?(event:string, callback:(...args:unknown[])=>void):void;removeListener?(event:string,callback:(...args:unknown[])=>void):void; }

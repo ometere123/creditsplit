@@ -266,6 +266,7 @@ def test_frozen_evidence_and_payout_split(fixture):
     assert settled['amounts_wei']==['50','30','10'] and sum(x[1] for x in FAKE.transfers)==90
     assert c.active_escrow==0 and c.total_dispatched==90
     assert settled['settlement']=='EMITTED_UNVERIFIED'
+    assert settled['settlement_reason']=='COMPLETED_DELIVERABLE'
     assert json.loads(c.get_profile(ADDR[1]))['points']==5
     with pytest.raises(UserError):c.evaluate_contributions(id)
 
@@ -457,6 +458,32 @@ def test_inconclusive_consensus_is_retryable_without_state_change(fixture):
     FAKE.vm.run_nondet_unsafe = original
     c.evaluate_contributions(id)
     assert json.loads(c.get_project(id))['status'] == 'SETTLEMENT_EMITTED'
+
+def test_unresolved_refund_requires_unanimous_participant_consent(fixture):
+    c, _ = fixture
+    id = fully_submitted(c)
+    before = json.loads(c.get_project(id))
+    acting(ADDR[0]); c.approve_unresolved_refund(id)
+    sponsor_only = json.loads(c.get_project(id))
+    assert sponsor_only['status'] == 'FROZEN'
+    assert sponsor_only['evidence_digest'] == before['evidence_digest']
+    assert sponsor_only['unresolved_refund_approvals'] == [True, False, False, False]
+    assert c.active_escrow == 90 and not FAKE.transfers
+    for a in ADDR[1:4]:
+        acting(a); c.approve_unresolved_refund(id)
+    settled = json.loads(c.get_project(id))
+    assert settled['status'] == 'REFUND_EMITTED'
+    assert settled['settlement_reason'] == 'UNRESOLVED_UNANIMOUS_EXIT'
+    assert settled['evidence_digest'] == before['evidence_digest']
+    assert c.active_escrow == 0 and FAKE.transfers == [(ADDR[0], 90)]
+
+def test_unresolved_refund_cannot_override_successful_adjudication(fixture):
+    c, _ = fixture
+    id = fully_submitted(c)
+    acting(ADDR[0]); c.evaluate_contributions(id)
+    assert json.loads(c.get_project(id))['status'] == 'SETTLEMENT_EMITTED'
+    with pytest.raises(UserError, match='frozen'):
+        c.approve_unresolved_refund(id)
 
 
 def test_exact_packet_anchor_is_required_for_positive_merit(fixture):

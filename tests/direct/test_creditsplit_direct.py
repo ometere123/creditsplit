@@ -236,6 +236,7 @@ def test_direct_lifecycle_reconstructs_amounts_and_blocks_replay(
     contract.evaluate_contributions(project_id)
     project = json.loads(contract.get_project(project_id))
     assert project["status"] == "SETTLEMENT_EMITTED"
+    assert project["settlement_reason"] == "COMPLETED_DELIVERABLE"
     assert project["amounts_wei"] == ["50", "30", "10"]
     assert int(contract.active_escrow) == 0
     assert direct_vm._captured_validators
@@ -533,6 +534,27 @@ def test_direct_failed_completion_refunds_even_with_useful_work(
     assert project["status"] == "REFUND_EMITTED"
     assert project["weights"] == [0, 0, 0]
     assert project["decision"]["informational_weights"] == [5, 3, 0]
+
+
+def test_direct_unresolved_exit_requires_all_four_participants(
+    direct_deploy, direct_vm, direct_alice, direct_bob, direct_charlie, direct_accounts
+):
+    contract = direct_deploy(CONTRACT)
+    contributors = [direct_bob, direct_charlie, direct_accounts[4]]
+    project_id = _fully_frozen(contract, direct_vm, direct_alice, contributors)
+    direct_vm.sender = direct_alice
+    contract.approve_unresolved_refund(project_id)
+    project = json.loads(contract.get_project(project_id))
+    assert project["status"] == "FROZEN"
+    assert project["unresolved_refund_approvals"] == [True, False, False, False]
+    assert int(contract.active_escrow) == 90
+    for address in contributors:
+        direct_vm.sender = address
+        contract.approve_unresolved_refund(project_id)
+    project = json.loads(contract.get_project(project_id))
+    assert project["status"] == "REFUND_EMITTED"
+    assert project["settlement_reason"] == "UNRESOLVED_UNANIMOUS_EXIT"
+    assert int(contract.active_escrow) == 0
 
 
 def test_direct_bounded_packet_anchor_is_verified(
