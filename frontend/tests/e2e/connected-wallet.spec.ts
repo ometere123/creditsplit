@@ -115,3 +115,28 @@ test('account and chain changes clear stale signing authority', async ({page}) =
   await page.evaluate(() => (window as unknown as {__creditsplitTest:{switchChain:(chain:string)=>void}}).__creditsplitTest.switchChain('0x1'));
   await expect(page.getByText('Wallet or network changed. Reconnect to StudioNet before signing.')).toBeVisible();
 });
+
+test('durable recovery records survive reload and protect a second tab from duplicate funding', async ({page}) => {
+  await installProvider(page);
+  await failReads(page);
+  await page.addInitScript(({address, contract, hash}) => {
+    const record = {hash, chainId: 61999, wallet: address.toLowerCase(), contract: contract.toLowerCase(), method: 'create_project', submittedAt: Date.now()};
+    localStorage.setItem(`creditsplit:submitted-tx:61999:${address.toLowerCase()}:${contract.toLowerCase()}:create_project:${hash}`, JSON.stringify(record));
+  }, {address: sponsor, contract: '0xBfBF8E1AB95cbEfF732aa541840f55C222f2c80D', hash: txHash});
+  await page.goto('/');
+  await page.getByRole('button',{name:'Connect wallet'}).click();
+  await expect(page.getByText(/Existing create_project submission locked/)).toBeVisible();
+  await page.getByRole('button',{name:'Create a project',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Create & fund project'})).toBeDisabled();
+
+  const second = await page.context().newPage();
+  await installProvider(second);
+  await failReads(second);
+  await second.goto('/');
+  await second.getByRole('button',{name:'Connect wallet'}).click();
+  await expect(second.getByText(/Existing create_project submission locked/)).toBeVisible();
+  await page.reload();
+  await page.getByRole('button',{name:'Connect wallet'}).click();
+  await expect(page.getByText(/Existing create_project submission locked/)).toBeVisible();
+  await second.close();
+});

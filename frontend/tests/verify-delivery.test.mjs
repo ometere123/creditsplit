@@ -77,10 +77,8 @@ function report({
   project = projectRecord(),
   parent = parentRecord(),
   children = CHILDREN.map((_, index) => childRecord(index)),
-  recipients = RECIPIENTS,
   chainId = '0xf22f',
   triggered = CHILDREN,
-  mode = 'auto',
   balanceEvidence = { historicalDeltas: null },
 } = {}) {
   return {
@@ -91,7 +89,7 @@ function report({
       summary: { status: 'FINALIZED', result: 'MAJORITY_AGREE', leaderExecution: 'SUCCESS', execution: undefined, issues: [] },
     },
     children: children.map((value, index) => ({
-      hash: CHILDREN[index],
+      hash: value.hash ?? CHILDREN[index],
       transaction: { supported: true, value },
       summary: { status: 'FINALIZED', result: value.result, valueCredited: value.valueCredited, issues: [] },
       evmReceipt: { supported: true, value: { receiptStatus: 'SUCCESS' } },
@@ -114,6 +112,50 @@ test('genuine parent-child payout provenance is accepted but delivery remains co
   const result = verdictFor();
   assert.equal(result.verdict, 'ALLOCATION_AND_PROTOCOL_CREDIT_VERIFIED_DELIVERY_UNCONFIRMED');
   assert.deepEqual(result.contradictions, []);
+});
+
+test('zero-weight contributor slots do not require zero-value child transfers', () => {
+  const variants = [
+    [[5, 0, 3], ['5', '0', '3']],
+    [[0, 0, 5], ['0', '0', '5']],
+    [[5, 3, 0], ['5', '3', '0']],
+    [[0, 3, 5], ['0', '3', '5']],
+    [[5, 3, 3], ['5', '3', '3']],
+  ];
+  for (const [weights, amounts] of variants) {
+    const positive = amounts.map((value, index) => BigInt(value) > 0n ? index : -1).filter((index) => index >= 0);
+    const childHashes = positive.map((index) => CHILDREN[index]);
+    const project = projectRecord();
+    project.pool_wei = amounts.reduce((sum, value) => sum + BigInt(value), 0n).toString();
+    project.weights = weights;
+    project.amounts_wei = amounts;
+    const children = positive.map((index) => childRecord(index, { value: amounts[index] }));
+    const parent = parentRecord();
+    parent.triggeredTransactions = childHashes;
+    const result = verdictFor({ project, parent, children, triggered: childHashes }, args(RECIPIENTS, childHashes));
+    assert.equal(result.contradictions.length, 0, `${weights.join(',')} should verify: ${result.contradictions.join('; ')}`);
+    assert.equal(result.verdict, 'ALLOCATION_AND_PROTOCOL_CREDIT_VERIFIED_DELIVERY_UNCONFIRMED');
+  }
+});
+
+test('a zero-value child supplied for a zero allocation is rejected', () => {
+  const project = projectRecord();
+  project.pool_wei = '8';
+  project.weights = [5, 0, 3];
+  project.amounts_wei = ['5', '0', '3'];
+  const childHashes = CHILDREN;
+  const parent = parentRecord();
+  parent.triggeredTransactions = childHashes;
+  const children = CHILDREN.map((_, index) => childRecord(index, { value: index === 1 ? '0' : project.amounts_wei[index] }));
+  const result = verdictFor({ project, parent, children, triggered: childHashes }, args(RECIPIENTS, childHashes));
+  assert.equal(result.verdict, 'INCONCLUSIVE_OR_CONTRADICTED');
+  assert.ok(result.contradictions.length > 0);
+});
+
+test('authoritative child ordering must match contributor allocation order', () => {
+  const verdict = verdictFor(report({triggered: [CHILDREN[1], CHILDREN[0], CHILDREN[2]]}), args());
+  assert.equal(verdict.verdict, 'INCONCLUSIVE_OR_CONTRADICTED');
+  assert.ok(verdict.contradictions.length > 0);
 });
 
 test('an unrelated successful parent cannot verify a payout', () => {

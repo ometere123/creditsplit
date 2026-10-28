@@ -35,6 +35,9 @@ export function settlementPresentation(project: Pick<Project,'settlement'|'statu
   if (project.settlement === 'NOT_EMITTED') return 'VERIFICATION_PENDING';
   return 'TRANSFER_REQUIRES_INVESTIGATION';
 }
+export function settlementPoolLabel(project: Pick<Project,'settlement'|'status'>): 'Locked reward pool'|'Original funded pool' {
+  return ['SETTLEMENT_EMITTED','REFUND_EMITTED'].includes(project.status) ? 'Original funded pool' : 'Locked reward pool';
+}
 export type ProjectPreview = Pick<Project,'id'|'title'|'brief'|'status'|'pool_wei'|'sponsor'|'joined'>;
 export type Profile = { projects: number; points: number; earned_wei: string };
 export const EMPTY_PROFILE: Profile = {projects:0,points:0,earned_wei:'0'};

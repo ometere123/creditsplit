@@ -10,6 +10,7 @@ export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ?? '';
 export const configured = /^0x[a-fA-F0-9]{40}$/.test(CONTRACT_ADDRESS);
 const SUBMITTED_TX_PREFIX = 'creditsplit:submitted-tx:';
 const CONFIRMED_TX_PREFIX = 'creditsplit:confirmed-tx:';
+const SIGNING_TX_PREFIX = 'creditsplit:signing-tx:';
 export const SUBMITTED_TX_KEY = 'creditsplit:submitted-tx';
 function asHash(value:string): Hash {
   if(!/^0x[a-fA-F0-9]{64}$/.test(value)) throw new Error(`Invalid transaction hash: ${value}`);
@@ -24,6 +25,15 @@ export type SubmittedTransaction = {
   method:string;
   submittedAt:number;
   legacy?:boolean;
+};
+
+export type SigningTransaction = {
+  id:string;
+  chainId:number;
+  wallet:string;
+  contract:string;
+  method:string;
+  startedAt:number;
 };
 
 export type ConfirmedTransaction = SubmittedTransaction & {
@@ -62,6 +72,95 @@ export function confirmedTransactionStorageKey(record:SubmittedTransaction):stri
   return `${CONFIRMED_TX_PREFIX}${record.chainId}:${record.wallet.toLowerCase()}:${record.contract.toLowerCase()}:${encodeURIComponent(record.method)}:${record.hash.toLowerCase()}`;
 }
 
+export function makeSigningTransaction(wallet:string,method:string,startedAt=Date.now(),id?:string):SigningTransaction {
+  const generatedId=id??(typeof crypto!=='undefined'&&'randomUUID' in crypto?crypto.randomUUID():`${startedAt}-${Math.random().toString(36).slice(2)}`);
+  return {id:generatedId,chainId:NETWORK_ID,wallet:wallet.toLowerCase(),contract:CONTRACT_ADDRESS.toLowerCase(),method,startedAt};
+}
+
+export function parseSigningTransaction(raw:string|null):SigningTransaction|null {
+  if(!raw) return null;
+  try {
+    const parsed=JSON.parse(raw) as Partial<SigningTransaction>;
+    if(typeof parsed.id==='string'&&parsed.id.length>0&&parsed.chainId===NETWORK_ID&&typeof parsed.wallet==='string'&&
+       /^0x[a-fA-F0-9]{40}$/.test(parsed.wallet)&&typeof parsed.contract==='string'&&/^0x[a-fA-F0-9]{40}$/.test(parsed.contract)&&
+       typeof parsed.method==='string'&&parsed.method.length>0&&typeof parsed.startedAt==='number'&&Number.isFinite(parsed.startedAt)) {
+      return {...parsed,wallet:parsed.wallet.toLowerCase(),contract:parsed.contract.toLowerCase()} as SigningTransaction;
+    }
+  } catch { /* Corrupt pre-broadcast records remain ignored and never authorize a write. */ }
+  return null;
+}
+
+export function signingTransactionStorageKey(record:SigningTransaction):string {
+  return `${SIGNING_TX_PREFIX}${record.chainId}:${record.wallet.toLowerCase()}:${record.contract.toLowerCase()}:${encodeURIComponent(record.method)}`;
+}
+
+function storage():Storage|null {
+  if(typeof window==='undefined') return null;
+  try { return window.localStorage; } catch { return null; }
+}
+
+export function transactionStorageAvailable():boolean {
+  const store=storage();
+  if(!store) return false;
+  const key=`${SIGNING_TX_PREFIX}probe`;
+  try { store.setItem(key,'1');store.removeItem(key);return true; } catch { return false; }
+}
+
+export function readSigningTransactions():SigningTransaction[] {
+  const store=storage();
+  if(!store) return [];
+  try {
+    const records:SigningTransaction[]=[];
+    const seen=new Set<string>();
+    for(let index=0;index<store.length;index++){
+      const key=store.key(index);
+      if(!key?.startsWith(SIGNING_TX_PREFIX)) continue;
+      const record=parseSigningTransaction(store.getItem(key));
+      if(record&&!seen.has(record.id)){seen.add(record.id);records.push(record);}
+    }
+    return records.sort((a,b)=>b.startedAt-a.startedAt);
+  } catch { return []; }
+}
+
+export function rememberSigningTransaction(record:SigningTransaction):void {
+  const store=storage();
+  if(!store) throw new Error('Durable browser storage is unavailable; refusing to request a wallet signature.');
+  store.setItem(signingTransactionStorageKey(record),JSON.stringify(record));
+}
+
+export function forgetSigningTransaction(record:SigningTransaction):void {
+  const store=storage();
+  if(!store) return;
+  try { store.removeItem(signingTransactionStorageKey(record)); } catch { /* Keep the conservative lock if storage cannot be updated. */ }
+}
+
+export function signingMatchesWallet(record:SigningTransaction|null,wallet:string):boolean {
+  return !!record&&record.chainId===NETWORK_ID&&(!configured||record.contract===CONTRACT_ADDRESS.toLowerCase())&&record.wallet===wallet.toLowerCase();
+}
+
+export function isUserRejectedError(error:unknown):boolean {
+  if(typeof error!=='object'||error===null) return false;
+  const code=(error as {code?:unknown}).code;
+  const message=String((error as {message?:unknown}).message??'').toLowerCase();
+  return code===4001||message.includes('user rejected')||message.includes('rejected by user')||message.includes('user denied');
+}
+
+type WriteLockManager={request:<T>(name:string,options:{ifAvailable:true},callback:(lock:unknown|null)=>Promise<T>)=>Promise<T>};
+
+export async function withWriteCoordination<T>(key:string,task:()=>Promise<T>):Promise<T> {
+  const manager=(typeof navigator!=='undefined'?(navigator as Navigator&{locks?:WriteLockManager}).locks:undefined);
+  if(!manager?.request) throw new Error('Safe cross-tab write coordination is unavailable; refusing to request a wallet signature.');
+  let acquired=false;
+  return manager.request(`creditsplit:write:${key}`,{ifAvailable:true},async lock=>{
+    if(!lock) throw new Error('Another Creditsplit tab is already handling this wallet write. Reconcile it before signing again.');
+    acquired=true;
+    return task();
+  }).then(result=>{
+    if(!acquired) throw new Error('Safe cross-tab write coordination could not be established.');
+    return result;
+  });
+}
+
 export function makeConfirmedTransaction(record:SubmittedTransaction,confirmedAt=Date.now()):ConfirmedTransaction {
   return {...record,outcome:'CONFIRMED_SUCCESS',confirmedAt,syncStatus:'PENDING'};
 }
@@ -93,51 +192,62 @@ export async function reconcileConfirmedRead(
 }
 
 export function readConfirmedTransactions():ConfirmedTransaction[] {
-  if(typeof window==='undefined') return [];
-  const records:ConfirmedTransaction[]=[];
-  const seen=new Set<string>();
-  for(let index=0;index<window.localStorage.length;index++){
-    const key=window.localStorage.key(index);
-    if(!key?.startsWith(CONFIRMED_TX_PREFIX)) continue;
-    const record=parseConfirmedTransaction(window.localStorage.getItem(key));
-    if(record&&!seen.has(record.hash.toLowerCase())){seen.add(record.hash.toLowerCase());records.push(record);}
-  }
-  return records.sort((a,b)=>b.confirmedAt-a.confirmedAt);
+  const store=storage();
+  if(!store) return [];
+  try {
+    const records:ConfirmedTransaction[]=[];
+    const seen=new Set<string>();
+    for(let index=0;index<store.length;index++){
+      const key=store.key(index);
+      if(!key?.startsWith(CONFIRMED_TX_PREFIX)) continue;
+      const record=parseConfirmedTransaction(store.getItem(key));
+      if(record&&!seen.has(record.hash.toLowerCase())){seen.add(record.hash.toLowerCase());records.push(record);}
+    }
+    return records.sort((a,b)=>b.confirmedAt-a.confirmedAt);
+  } catch { return []; }
 }
 
 export function rememberConfirmedTransaction(record:ConfirmedTransaction):void {
-  if(typeof window==='undefined') return;
-  window.localStorage.setItem(confirmedTransactionStorageKey(record),JSON.stringify(record));
+  const store=storage();
+  if(!store) throw new Error('Durable browser storage is unavailable; cannot persist confirmed transaction state.');
+  store.setItem(confirmedTransactionStorageKey(record),JSON.stringify(record));
 }
 
 export function readSubmittedTransactions():SubmittedTransaction[] {
-  if(typeof window==='undefined') return [];
-  const records:SubmittedTransaction[]=[];
-  const seen=new Set<string>();
-  const add=(raw:string|null)=>{
-    const record=parseSubmittedTransaction(raw);
-    if(record&&!seen.has(record.hash.toLowerCase())){seen.add(record.hash.toLowerCase());records.push(record);}
-  };
-  add(window.localStorage.getItem(SUBMITTED_TX_KEY));
-  for(let index=0;index<window.localStorage.length;index++){
-    const key=window.localStorage.key(index);
-    if(key?.startsWith(SUBMITTED_TX_PREFIX)) add(window.localStorage.getItem(key));
-  }
-  return records;
+  const store=storage();
+  if(!store) return [];
+  try {
+    const records:SubmittedTransaction[]=[];
+    const seen=new Set<string>();
+    const add=(raw:string|null)=>{
+      const record=parseSubmittedTransaction(raw);
+      if(record&&!seen.has(record.hash.toLowerCase())){seen.add(record.hash.toLowerCase());records.push(record);}
+    };
+    add(store.getItem(SUBMITTED_TX_KEY));
+    for(let index=0;index<store.length;index++){
+      const key=store.key(index);
+      if(key?.startsWith(SUBMITTED_TX_PREFIX)) add(store.getItem(key));
+    }
+    return records;
+  } catch { return []; }
 }
 
 export function rememberSubmittedTransaction(record:SubmittedTransaction):void {
-  if(typeof window==='undefined') return;
-  window.localStorage.setItem(submittedTransactionStorageKey(record),JSON.stringify(record));
-  const legacy=parseSubmittedTransaction(window.localStorage.getItem(SUBMITTED_TX_KEY));
-  if(legacy?.hash.toLowerCase()===record.hash.toLowerCase()) window.localStorage.removeItem(SUBMITTED_TX_KEY);
+  const store=storage();
+  if(!store) throw new Error('Durable browser storage is unavailable; cannot persist transaction recovery state.');
+  store.setItem(submittedTransactionStorageKey(record),JSON.stringify(record));
+  const legacy=parseSubmittedTransaction(store.getItem(SUBMITTED_TX_KEY));
+  if(legacy?.hash.toLowerCase()===record.hash.toLowerCase()) store.removeItem(SUBMITTED_TX_KEY);
 }
 
 export function forgetSubmittedTransaction(record:SubmittedTransaction):void {
-  if(typeof window==='undefined') return;
-  window.localStorage.removeItem(submittedTransactionStorageKey(record));
-  const legacy=parseSubmittedTransaction(window.localStorage.getItem(SUBMITTED_TX_KEY));
-  if(legacy?.hash.toLowerCase()===record.hash.toLowerCase()) window.localStorage.removeItem(SUBMITTED_TX_KEY);
+  const store=storage();
+  if(!store) return;
+  try {
+    store.removeItem(submittedTransactionStorageKey(record));
+    const legacy=parseSubmittedTransaction(store.getItem(SUBMITTED_TX_KEY));
+    if(legacy?.hash.toLowerCase()===record.hash.toLowerCase()) store.removeItem(SUBMITTED_TX_KEY);
+  } catch { /* Do not turn a confirmed result into a failure because storage is unavailable. */ }
 }
 
 export function recoveryMatchesWallet(record:SubmittedTransaction|null,wallet:string):boolean {
@@ -150,109 +260,115 @@ export function isFinalizedExecutionFailure(error:unknown):boolean {
   return error instanceof FinalizedExecutionFailure;
 }
 
-class FinalizedExecutionFailure extends Error {
-  constructor(public readonly hash:string,public readonly receipt:unknown) {
-    const details=receipt as {statusName?:string;status_name?:string;txExecutionResultName?:string;tx_execution_result_name?:string;resultName?:string;result_name?:string};
-    super(`Transaction finalized without successful execution: ${details.statusName ?? details.status_name ?? 'unknown'} / ${details.txExecutionResultName ?? details.tx_execution_result_name ?? details.resultName ?? details.result_name ?? 'unknown'}. Inspect ${hash}.`);
-    this.name='FinalizedExecutionFailure';
-  }
-}
-
 type ReceiptRecord=Record<string,unknown>;
 function asReceiptRecord(value:unknown):ReceiptRecord|null {
   return typeof value==='object'&&value!==null?value as ReceiptRecord:null;
 }
 
+const STATUS_BY_NUMBER:Record<number,string>={0:'UNINITIALIZED',1:'PENDING',2:'PROPOSING',3:'COMMITTING',4:'REVEALING',5:'ACCEPTED',6:'UNDETERMINED',7:'FINALIZED',8:'CANCELED',9:'APPEAL_REVEALING',10:'APPEAL_COMMITTING',11:'READY_TO_FINALIZE',12:'VALIDATORS_TIMEOUT',13:'LEADER_TIMEOUT'};
+const RESULT_BY_NUMBER:Record<number,string>={0:'IDLE',1:'AGREE',2:'DISAGREE',3:'TIMEOUT',4:'DETERMINISTIC_VIOLATION',5:'NO_MAJORITY',6:'MAJORITY_AGREE',7:'MAJORITY_DISAGREE'};
+const EXECUTION_BY_NUMBER:Record<number,string>={0:ExecutionResult.NOT_VOTED,1:ExecutionResult.FINISHED_WITH_RETURN,2:ExecutionResult.FINISHED_WITH_ERROR};
+
+export type TransactionOutcome='SUCCESS'|'FAILED'|'PENDING'|'UNKNOWN';
+export type ReceiptClassification={outcome:TransactionOutcome;status?:string;result?:string;execution?:string;reason:string};
+
+function decodeEnum(record:ReceiptRecord, namedKeys:string[], numericKeys:string[], map:Record<number,string>):{value?:string;present:boolean;valid:boolean} {
+  const named=namedKeys.flatMap(key=>record[key]===undefined?[]:[record[key]]);
+  const numeric=numericKeys.flatMap(key=>record[key]===undefined?[]:[record[key]]);
+  const decodedNamed=named.map(value=>typeof value==='string'?value:null);
+  const decodedNumeric=numeric.map(value=>{
+    if(typeof value==='number'&&Number.isInteger(value)) return map[value]??null;
+    if(typeof value==='string') {
+      if(/^\d+$/.test(value)) return map[Number(value)]??null;
+      return Object.values(map).includes(value) ? value : null;
+    }
+    return null;
+  });
+  if(decodedNamed.some(value=>value===null)||decodedNumeric.some(value=>value===null)) return {present:true,valid:false};
+  const values=[...decodedNamed,...decodedNumeric] as string[];
+  return {present:values.length>0,value:values.length&&values.every(value=>value===values[0])?values[0]:undefined,valid:values.length===0||values.every(value=>value===values[0])};
+}
+
 function isBenignQuorumCancellation(value:ReceiptRecord|null):boolean {
   if(!value||value.execution_result!=='ERROR'||value.vote!=='idle') return false;
   const genvmResult=asReceiptRecord(value.genvm_result);
-  const errorCodes=[value.error_code,genvmResult?.error_code]
-    .filter((code):code is string=>typeof code==='string');
+  const errorCodes=[value.error_code,genvmResult?.error_code].filter((code):code is string=>typeof code==='string');
   if(!errorCodes.includes('CONSENSUS_VALIDATOR_QUORUM_REACHED')) return false;
-
-  // The full genlayer-js receipt nests this diagnostic under genvm_result.
-  // If a raw error is present, require it to independently identify the
-  // same quorum cancellation; arbitrary validator errors stay failures.
-  const rawErrors=[value.raw_error,genvmResult?.raw_error]
-    .map(asReceiptRecord)
-    .filter((error):error is ReceiptRecord=>!!error);
+  const rawErrors=[value.raw_error,genvmResult?.raw_error].map(asReceiptRecord).filter((error):error is ReceiptRecord=>!!error);
   if(!rawErrors.length) return true;
   return rawErrors.some(error=>Array.isArray(error.causes)&&error.causes.includes('VALIDATOR_QUORUM_REACHED'));
 }
 
-/**
- * StudioNet's genlayer-js 1.1.8 simplified receipt omits txExecutionResultName.
- * In that shape, the authoritative successful parent signal is FINALIZED plus
- * MAJORITY_AGREE and a successful leader execution. Never treat finalization
- * alone as proof of a successful contract write.
- */
-export function isSuccessfulFinalizedReceipt(value:unknown):boolean {
-  const receipt=asReceiptRecord(value);
-  if(!receipt) return false;
-  const statusNames=[receipt.statusName,receipt.status_name].filter(value=>value!==undefined);
-  const statusNumbers=[receipt.status].filter(value=>value!==undefined).map(value=>typeof value==='number'?value:Number(value));
-  if(statusNames.some(value=>typeof value!=='string'||value!=='FINALIZED')||
-     statusNumbers.some(value=>!Number.isFinite(value)||value!==7)||
-     (!statusNames.length&&!statusNumbers.length)) return false;
+function consensusRecord(receipt:ReceiptRecord):{record:ReceiptRecord|null;present:boolean;valid:boolean} {
+  const values=[receipt.consensusData,receipt.consensus_data].filter(value=>value!==undefined);
+  if(values.length===0) return {record:null,present:false,valid:true};
+  if(values.length===2&&JSON.stringify(values[0])!==JSON.stringify(values[1])) return {record:null,present:true,valid:false};
+  const record=asReceiptRecord(values[0]);
+  return {record,present:true,valid:!!record};
+}
 
-  const executionNames=[receipt.txExecutionResultName,receipt.tx_execution_result_name].filter(value=>value!==undefined);
-  const executionNumbers=[receipt.txExecutionResult].filter(value=>value!==undefined).map(value=>typeof value==='number'?value:Number(value));
-  if(executionNames.some(value=>value!==ExecutionResult.FINISHED_WITH_RETURN&&value!==ExecutionResult.FINISHED_WITH_ERROR&&value!==ExecutionResult.NOT_VOTED)||
-     executionNumbers.some(value=>!Number.isFinite(value)||!([0,1,2] as number[]).includes(value))||
-     (executionNames.length===2&&executionNames[0]!==executionNames[1])||
-     (executionNumbers.length===2&&executionNumbers[0]!==executionNumbers[1])||
-     (executionNames.length&&executionNumbers.length&&
-       ((executionNames[0]===ExecutionResult.FINISHED_WITH_RETURN&&executionNumbers[0]!==1)||
-        (executionNames[0]===ExecutionResult.NOT_VOTED&&executionNumbers[0]!==0)||
-        (executionNames[0]===ExecutionResult.FINISHED_WITH_ERROR&&executionNumbers[0]!==2)))) return false;
-  const explicitExecutionSuccess=executionNames.includes(ExecutionResult.FINISHED_WITH_RETURN)||executionNumbers.includes(1);
-  const explicitExecutionFailure=executionNames.some(value=>value!==ExecutionResult.FINISHED_WITH_RETURN)||executionNumbers.some(value=>value!==1);
-  if(explicitExecutionFailure) return false;
-
-  const resultNames=[receipt.resultName,receipt.result_name].filter(value=>value!==undefined);
-  const resultNumbers=[receipt.result].filter(value=>value!==undefined).map(value=>typeof value==='number'?value:Number(value));
-  const resultByNumber=['IDLE','AGREE','DISAGREE','TIMEOUT','DETERMINISTIC_VIOLATION','NO_MAJORITY','MAJORITY_AGREE','MAJORITY_DISAGREE'];
-  if(resultNames.some(value=>typeof value!=='string'||!resultByNumber.includes(value))||
-     resultNumbers.some(value=>!Number.isFinite(value)||value<0||value>7||!Number.isInteger(value))||
-     (resultNames.length===2&&resultNames[0]!==resultNames[1])||
-     (resultNumbers.length===2&&resultNumbers[0]!==resultNumbers[1])||
-     (resultNames.length&&resultNumbers.length&&resultByNumber[resultNumbers[0]]!==resultNames[0])) return false;
-  const consensusNames=resultNames.length?resultNames:[...resultNumbers.map(value=>resultByNumber[value])];
-  if(consensusNames.some(value=>value!=='MAJORITY_AGREE')) return false;
-  const explicitConsensusSuccess=consensusNames.includes('MAJORITY_AGREE');
-
-  const consensusValues=[receipt.consensusData,receipt.consensus_data].filter(value=>value!==undefined);
-  if(consensusValues.length===2&&JSON.stringify(consensusValues[0])!==JSON.stringify(consensusValues[1])) return false;
-  const consensus=consensusValues.length?asReceiptRecord(consensusValues[0]):null;
-  if(consensusValues.length&&!consensus) return false;
-  if(consensus){
-    const leaderRaw=consensus.leader_receipt;
-    if(leaderRaw!==undefined){
-      const leaders=Array.isArray(leaderRaw)?leaderRaw:[leaderRaw];
-      if(!leaders.length) return false;
-      for(const raw of leaders){
-        const leader=asReceiptRecord(raw);
-        const leaderExecution=leader?.execution_result;
-        if(typeof leaderExecution!=='string'||!['SUCCESS','FINISHED_WITH_RETURN'].includes(leaderExecution)) return false;
-      }
-    }
-    const validators=consensus.validators;
-    if(validators!==undefined){
-      if(!Array.isArray(validators)) return false;
-      for(const raw of validators){
-        const validator=asReceiptRecord(raw);
-        if(!validator) return false;
-        const executionResult=validator.execution_result;
-        if(executionResult!==undefined&&
-           (typeof executionResult!=='string'||
-            (!['SUCCESS','FINISHED_WITH_RETURN'].includes(executionResult)&&!isBenignQuorumCancellation(validator)))) return false;
-      }
-    }
+function leaderSuccess(consensus:ReceiptRecord|null):{present:boolean;success:boolean;failed:boolean;valid:boolean} {
+  if(!consensus||consensus.leader_receipt===undefined) return {present:false,success:false,failed:false,valid:true};
+  const leaders=Array.isArray(consensus.leader_receipt)?consensus.leader_receipt:[consensus.leader_receipt];
+  if(!leaders.length) return {present:true,success:false,failed:false,valid:false};
+  let failed=false;
+  for(const raw of leaders){
+    const item=asReceiptRecord(raw);
+    if(!item||typeof item.execution_result!=='string') return {present:true,success:false,failed:false,valid:false};
+    if(['ERROR','FINISHED_WITH_ERROR','FAILED'].includes(item.execution_result)) failed=true;
+    else if(!['SUCCESS','FINISHED_WITH_RETURN'].includes(item.execution_result)) return {present:true,success:false,failed:false,valid:false};
   }
-  // A simplified receipt is accepted only when it contains the complete
-  // FINALIZED + MAJORITY_AGREE + successful leader path. Full SDK receipts
-  // may omit consensus fields, but must expose FINISHED_WITH_RETURN.
-  return explicitExecutionSuccess || (explicitConsensusSuccess&&!!consensus&&Array.isArray(consensus.leader_receipt)&&consensus.leader_receipt.length>0);
+  return {present:true,success:!failed,failed,valid:true};
+}
+
+function validatorsValid(consensus:ReceiptRecord|null):boolean {
+  if(!consensus||consensus.validators===undefined) return true;
+  if(!Array.isArray(consensus.validators)) return false;
+  return consensus.validators.every(raw=>{
+    const validator=asReceiptRecord(raw);
+    if(!validator) return false;
+    const execution=validator.execution_result;
+    return execution===undefined || execution==='SUCCESS' || execution==='FINISHED_WITH_RETURN' || isBenignQuorumCancellation(validator);
+  });
+}
+
+/** Classify only evidence exposed by the pinned genlayer-js 1.1.8 receipt shapes. */
+export function classifyTransactionReceipt(value:unknown):ReceiptClassification {
+  const receipt=asReceiptRecord(value);
+  if(!receipt) return {outcome:'UNKNOWN',reason:'Receipt is not an object.'};
+  const status=decodeEnum(receipt,['statusName','status_name'],['status'],STATUS_BY_NUMBER);
+  if(!status.present||!status.valid||!status.value) return {outcome:'UNKNOWN',reason:'Missing or contradictory transaction status.'};
+  if(status.value!=='FINALIZED') return {outcome:status.value==='CANCELED'?'FAILED':'PENDING',status:status.value,reason:`Transaction status is ${status.value}.`};
+  const result=decodeEnum(receipt,['resultName','result_name'],['result'],RESULT_BY_NUMBER);
+  if(!result.present||!result.valid||!result.value) return {outcome:'UNKNOWN',status:status.value,reason:'Finalized receipt has no authoritative consensus result.'};
+  if(result.value!=='MAJORITY_AGREE') return {outcome:'FAILED',status:status.value,result:result.value,reason:`Finalized consensus result is ${result.value}.`};
+  const execution=decodeEnum(receipt,['txExecutionResultName','tx_execution_result_name'],['txExecutionResult'],EXECUTION_BY_NUMBER);
+  if(execution.present&&!execution.valid) return {outcome:'UNKNOWN',status:status.value,result:result.value,reason:'Execution fields contradict one another.'};
+  if(execution.value===ExecutionResult.FINISHED_WITH_ERROR) return {outcome:'FAILED',status:status.value,result:result.value,execution:execution.value,reason:'Contract execution explicitly failed.'};
+  if(execution.value===ExecutionResult.NOT_VOTED||(!execution.present&&!receipt.consensusData&&!receipt.consensus_data)) return {outcome:'UNKNOWN',status:status.value,result:result.value,execution:execution.value,reason:'Finalized receipt lacks successful execution evidence.'};
+  const consensus=consensusRecord(receipt);
+  if(!consensus.valid) return {outcome:'UNKNOWN',status:status.value,result:result.value,execution:execution.value,reason:'Consensus data is malformed or contradictory.'};
+  const leader=leaderSuccess(consensus.record);
+  if(!leader.valid||leader.failed||!validatorsValid(consensus.record)) return {outcome:leader.failed?'FAILED':'UNKNOWN',status:status.value,result:result.value,execution:execution.value,reason:leader.failed?'Leader execution explicitly failed.':'Validator execution evidence is malformed or unsuccessful.'};
+  if(!leader.present) return {outcome:'UNKNOWN',status:status.value,result:result.value,execution:execution.value,reason:'No successful leader execution record was established.'};
+  if(!leader.success) return {outcome:'UNKNOWN',status:status.value,result:result.value,execution:execution.value,reason:'No successful contract or leader execution was established.'};
+  return {outcome:'SUCCESS',status:status.value,result:result.value,execution:execution.value,reason:'FINALIZED, MAJORITY_AGREE and successful execution are all established.'};
+}
+
+export function isSuccessfulFinalizedReceipt(value:unknown):boolean { return classifyTransactionReceipt(value).outcome==='SUCCESS'; }
+
+class FinalizedExecutionFailure extends Error {
+  constructor(public readonly hash:string,public readonly receipt:unknown) {
+    super(`Transaction finalized without successful execution. Inspect ${hash}.`);
+    this.name='FinalizedExecutionFailure';
+  }
+}
+
+class UnknownTransactionOutcome extends Error {
+  constructor(public readonly hash:string,public readonly receipt:unknown) {
+    super(`Transaction outcome is unresolved; keep the recovery lock and reconcile ${hash}.`);
+    this.name='UnknownTransactionOutcome';
+  }
 }
 
 export interface Provider { request(args:{method:string;params?:unknown[]}):Promise<unknown>;on?(event:string, callback:(...args:unknown[])=>void):void;removeListener?(event:string,callback:(...args:unknown[])=>void):void; }
@@ -287,22 +403,47 @@ export async function connectWallet(): Promise<string> {
 }
 export async function waitForSuccessfulFinalization(hash:string) {
   const receipt=await readClient().waitForTransactionReceipt({hash:asHash(hash),status:TransactionStatus.FINALIZED});
-  if(!isSuccessfulFinalizedReceipt(receipt)){
-    throw new FinalizedExecutionFailure(hash,receipt);
-  }
+  const classification=classifyTransactionReceipt(receipt);
+  if(classification.outcome==='FAILED') throw new FinalizedExecutionFailure(hash,receipt);
+  if(classification.outcome!=='SUCCESS') throw new UnknownTransactionOutcome(hash,receipt);
   return receipt;
 }
 export async function writeAndConfirm(method:string,args:unknown[],value:bigint,wallet:string,onHash:(hash:string)=>void) {
   if(!configured) throw new Error('Set NEXT_PUBLIC_CONTRACT_ADDRESS to a source-matched StudioNet deployment.');
-  const live = await connectWallet();
-  if(live.toLowerCase()!==wallet.toLowerCase()) throw new Error('Wallet changed; reconnect before signing.');
-  const client = createClient({chain:studionet,account:wallet as `0x${string}`,provider:window.ethereum});
-  // genlayer-js@1.1.8 builds the consensus-contract transaction, estimates gas,
-  // and supplies the wallet-selected gas price before requesting the signature.
-  // Keep the sponsor value separate from network fee selection.
-  const call={address:CONTRACT_ADDRESS as `0x${string}`,functionName:method,args:args as CalldataEncodable[],value};
-  const hash=await client.writeContract(call);
-  onHash(String(hash));
-  const receipt=await waitForSuccessfulFinalization(String(hash));
-  return {hash:String(hash),receipt};
+  const operationKey=`${NETWORK_ID}:${wallet.toLowerCase()}:${CONTRACT_ADDRESS.toLowerCase()}:${method}`;
+  return withWriteCoordination(operationKey,async()=>{
+    const live = await connectWallet();
+    if(live.toLowerCase()!==wallet.toLowerCase()) throw new Error('Wallet changed; reconnect before signing.');
+    const signing=makeSigningTransaction(wallet,method);
+    // This write-ahead record is durable before the injected provider can ask
+    // for a signature. If it cannot be stored, no signature is requested.
+    rememberSigningTransaction(signing);
+    let submittedHash='';
+    try {
+      const client = createClient({chain:studionet,account:wallet as `0x${string}`,provider:window.ethereum});
+      const call={address:CONTRACT_ADDRESS as `0x${string}`,functionName:method,args:args as CalldataEncodable[],value};
+      const hash=String(await client.writeContract(call));
+      submittedHash=hash;
+      const submitted=makeSubmittedTransaction(hash,wallet,method);
+      rememberSubmittedTransaction(submitted);
+      onHash(hash);
+      const receipt=await waitForSuccessfulFinalization(hash);
+      // Persist the authoritative success before clearing the unresolved
+      // record. A later UI read failure must never erase this fact.
+      rememberConfirmedTransaction(makeConfirmedTransaction(submitted));
+      forgetSubmittedTransaction(submitted);
+      forgetSigningTransaction(signing);
+      return {hash,receipt};
+    } catch(error) {
+      if(!submittedHash || (!isFinalizedExecutionFailure(error)&&error instanceof UnknownTransactionOutcome)) {
+        // Keep the signing record for rejection/timeout/unknown outcomes until
+        // the caller can reconcile or explicitly establish that no hash exists.
+        if(!submittedHash&&isUserRejectedError(error)) forgetSigningTransaction(signing);
+      } else if(isFinalizedExecutionFailure(error)) {
+        forgetSubmittedTransaction(makeSubmittedTransaction(submittedHash,wallet,method));
+        forgetSigningTransaction(signing);
+      }
+      throw error;
+    }
+  });
 }

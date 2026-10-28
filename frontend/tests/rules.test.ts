@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
-import {confirmedTransactionStorageKey,isSuccessfulFinalizedReceipt,makeConfirmedTransaction,makeSubmittedTransaction,markConfirmedTransactionSynchronized,parseConfirmedTransaction,parseSubmittedTransaction,reconcileConfirmedRead,recoveryMatchesWallet,submittedTransactionStorageKey} from '../lib/chain';
-import {parseGen,formatGen,formatGenExact,sumWei,bytes,settlementPresentation,validateCriteria,validateProjectInput,validateVerifiedSource} from '../lib/types';
+import {classifyTransactionReceipt,confirmedTransactionStorageKey,isSuccessfulFinalizedReceipt,makeConfirmedTransaction,makeSigningTransaction,makeSubmittedTransaction,markConfirmedTransactionSynchronized,parseConfirmedTransaction,parseSigningTransaction,parseSubmittedTransaction,reconcileConfirmedRead,recoveryMatchesWallet,signingMatchesWallet,signingTransactionStorageKey,submittedTransactionStorageKey,withWriteCoordination} from '../lib/chain';
+import {parseGen,formatGen,formatGenExact,sumWei,bytes,settlementPresentation,settlementPoolLabel,validateCriteria,validateProjectInput,validateVerifiedSource} from '../lib/types';
 const a='0x'+'1'.repeat(40),b='0x'+'2'.repeat(40),c='0x'+'3'.repeat(40),s='0x'+'4'.repeat(40);
 describe('funding and input invariants',()=>{
   it('preserves exact wei',()=>expect(parseGen('1.000000000000000001')).toBe(1000000000000000001n));
@@ -37,6 +37,17 @@ describe('transaction recovery scope',()=>{
     expect(recoveryMatchesWallet(record,'0x'+'1'.repeat(40))).toBe(true);
   });
   it('rejects malformed recovery records',()=>expect(parseSubmittedTransaction('{"hash":"not-a-hash"}')).toBeNull());
+  it('persists a pre-broadcast signing lock scoped to the wallet and method',()=>{
+    const record={...makeSigningTransaction(a,'create_project',123,'sign-1'),contract:'0x'+'9'.repeat(40)};
+    expect(parseSigningTransaction(JSON.stringify(record))).toEqual(record);
+    expect(signingTransactionStorageKey(record)).toContain(':create_project');
+    expect(signingMatchesWallet(record,a)).toBe(true);
+    expect(signingMatchesWallet(record,b)).toBe(false);
+    expect(parseSigningTransaction('{"id":"sign-1","chainId":61999,"wallet":"not-an-address"}')).toBeNull();
+  });
+  it('fails closed when the browser cannot provide cross-tab write coordination',async()=>{
+    await expect(withWriteCoordination('unit-test',async()=>1)).rejects.toThrow(/coordination is unavailable/i);
+  });
   it('persists confirmed-success outcome separately from unresolved recovery',()=>{
     const record=makeConfirmedTransaction({...makeSubmittedTransaction('0x'+'c'.repeat(64),a,'create_project',123),contract:'0x'+'9'.repeat(40)},456);
     expect(parseConfirmedTransaction(JSON.stringify(record))).toEqual(record);
@@ -59,6 +70,7 @@ describe('transaction recovery scope',()=>{
     expect(retried.record.syncStatus).toBe('SYNCED');
   });
   it('accepts the pinned SDK simplified StudioNet success receipt',()=>expect(isSuccessfulFinalizedReceipt({status_name:'FINALIZED',result_name:'MAJORITY_AGREE',consensus_data:{leader_receipt:[{execution_result:'SUCCESS'}]}})).toBe(true));
+  it('accepts SDK receipts that expose named values in the raw paired fields',()=>expect(isSuccessfulFinalizedReceipt({status:'FINALIZED',result:'MAJORITY_AGREE',txExecutionResult:'FINISHED_WITH_RETURN',consensus_data:{leader_receipt:[{execution_result:'SUCCESS'}]}})).toBe(true));
   it('accepts a complete explicit successful StudioNet receipt',()=>expect(isSuccessfulFinalizedReceipt({statusName:'FINALIZED',resultName:'MAJORITY_AGREE',txExecutionResultName:'FINISHED_WITH_RETURN',consensusData:{leader_receipt:[{execution_result:'SUCCESS'}]}})).toBe(true));
   it('accepts quorum-cancelled validator work after an agreed successful execution',()=>expect(isSuccessfulFinalizedReceipt({
     status:7,
@@ -109,7 +121,14 @@ describe('transaction recovery scope',()=>{
     expect(isSuccessfulFinalizedReceipt({statusName:'FINALIZED',txExecutionResultName:'FINISHED_WITH_ERROR'})).toBe(false);
     expect(isSuccessfulFinalizedReceipt({statusName:'PENDING',resultName:'MAJORITY_AGREE',consensusData:{leader_receipt:[{execution_result:'SUCCESS'}]}})).toBe(false);
   });
-  it('accepts an explicit successful execution result when present',()=>expect(isSuccessfulFinalizedReceipt({statusName:'FINALIZED',txExecutionResultName:'FINISHED_WITH_RETURN'})).toBe(true));
+  it('does not accept an incomplete finalized receipt as success or failure',()=>{
+    expect(classifyTransactionReceipt({statusName:'FINALIZED',resultName:'MAJORITY_AGREE'}).outcome).toBe('UNKNOWN');
+    expect(isSuccessfulFinalizedReceipt({statusName:'FINALIZED',resultName:'MAJORITY_AGREE',txExecutionResultName:'FINISHED_WITH_RETURN'})).toBe(false);
+  });
+  it('requires all three independent success conditions',()=>{
+    expect(classifyTransactionReceipt({statusName:'FINALIZED',resultName:'MAJORITY_AGREE',txExecutionResultName:'FINISHED_WITH_RETURN',consensusData:{leader_receipt:[{execution_result:'SUCCESS'}]}}).outcome).toBe('SUCCESS');
+    expect(classifyTransactionReceipt({statusName:'FINALIZED',resultName:'MAJORITY_DISAGREE',txExecutionResultName:'FINISHED_WITH_RETURN',consensusData:{leader_receipt:[{execution_result:'SUCCESS'}]}}).outcome).toBe('FAILED');
+  });
 });
 describe('settlement presentation',()=>{
   it('does not call emitted settlement paid',()=>expect(settlementPresentation({settlement:'EMITTED_UNVERIFIED',status:'SETTLEMENT_EMITTED'})).toBe('PAYMENT_EMITTED'));
@@ -117,5 +136,10 @@ describe('settlement presentation',()=>{
   it('keeps unsettled projects pending and unknown states investigable',()=>{
     expect(settlementPresentation({settlement:'NOT_EMITTED',status:'FROZEN'})).toBe('VERIFICATION_PENDING');
     expect(settlementPresentation({settlement:'BROKEN',status:'REFUND_EMITTED'})).toBe('TRANSFER_REQUIRES_INVESTIGATION');
+  });
+  it('labels settled pools as original funding rather than active escrow',()=>{
+    expect(settlementPoolLabel({settlement:'NOT_EMITTED',status:'FROZEN'})).toBe('Locked reward pool');
+    expect(settlementPoolLabel({settlement:'EMITTED_UNVERIFIED',status:'SETTLEMENT_EMITTED'})).toBe('Original funded pool');
+    expect(settlementPoolLabel({settlement:'EMITTED_UNVERIFIED',status:'REFUND_EMITTED'})).toBe('Original funded pool');
   });
 });
