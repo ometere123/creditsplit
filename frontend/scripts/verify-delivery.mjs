@@ -245,6 +245,17 @@ function normalizeList(value) {
   return Array.isArray(value) ? value : [];
 }
 
+function hasExactlyFourTrueApprovals(value) {
+  return Array.isArray(value) && value.length === 4 && value.every((entry) => entry === true);
+}
+
+function hasRecruitmentRefundJoinState(value) {
+  return Array.isArray(value)
+    && value.length === 3
+    && value.every((entry) => typeof entry === 'boolean')
+    && value.some((entry) => entry === false);
+}
+
 function addressEqual(a, b) {
   return typeof a === 'string' && typeof b === 'string' && a.toLowerCase() === b.toLowerCase();
 }
@@ -307,9 +318,9 @@ function verifyReadback(project, recipients, children, contract, mode) {
   if (settlement.mode === 'refund') {
     if (!addressEqual(project.sponsor, recipients[0])) contradictions.push('Refund recipient does not match the authenticated sponsor');
     if (recipients.length !== 1 || children.length !== 1) contradictions.push('A refund requires exactly one sponsor recipient and one child transfer');
-    if (project.settlement_reason === 'UNRESOLVED_UNANIMOUS_EXIT' && !normalizeList(project.unresolved_refund_approvals).every(Boolean)) contradictions.push('Unresolved refund does not show unanimous participant approval');
+    if (project.settlement_reason === 'UNRESOLVED_UNANIMOUS_EXIT' && !hasExactlyFourTrueApprovals(project.unresolved_refund_approvals)) contradictions.push('Unresolved refund does not show exactly four explicit true participant approvals');
     if (project.settlement_reason === 'INCOMPLETE_DELIVERABLE' && project.completion !== false) contradictions.push('Incomplete-deliverable refund is not marked incomplete');
-    if (project.settlement_reason === 'RECRUITMENT_EXPIRED' && normalizeList(project.joined).every(Boolean)) contradictions.push('Recruitment-expiry refund shows all contributors joined');
+    if (project.settlement_reason === 'RECRUITMENT_EXPIRED' && !hasRecruitmentRefundJoinState(project.joined)) contradictions.push('Recruitment-expiry refund does not show exactly three boolean join slots with at least one unjoined contributor');
     return { contradictions, mode: settlement.mode, reason: settlement.reason, poolWei: pool?.toString(), amountsWei: [], expectedMethods: settlement.methods, expectedRecipients: [project.sponsor] };
   }
   return { contradictions, mode: settlement.mode, reason: settlement.reason, poolWei: pool?.toString(), amountsWei: [] };
@@ -370,15 +381,16 @@ function evaluateHistoricalEvidence(balanceEvidence, parentRecord, children, che
     result.status = 'CONTRADICTED';
     return result;
   }
-  if (result.attribution?.supported === true && result.attribution.attributable === true && result.attribution.unrelatedActivity === false && result.attribution.gasWei === '0') {
-    result.status = 'VERIFIED';
-    return result;
-  }
   if (result.attribution?.unrelatedActivity === true) {
     result.contradictions.push('Historical beneficiary activity contains unrelated or unexplained movement');
     result.status = 'CONTRADICTED';
     return result;
   }
+  // A caller-supplied attribution object is not an authoritative activity
+  // proof. The public StudioNet path currently provides block-tagged balances
+  // but no trusted beneficiary activity/gas attribution that this verifier can
+  // independently bind to the settlement. Keep the result unconfirmed until
+  // such protocol evidence is available.
   result.status = 'OBSERVED_UNATTRIBUTED';
   return result;
 }
@@ -457,12 +469,11 @@ export function evaluateEvidence(report, args) {
   } : parentTransaction;
   const history = evaluateHistoricalEvidence(report.balanceEvidence, historicalParent, report.children ?? [], checked);
   contradictions.push(...history.contradictions);
-  const hasVerifiedHistory = history.status === 'VERIFIED';
   const hasObservedHistory = history.status === 'OBSERVED_UNATTRIBUTED';
   let verdict = 'INCONCLUSIVE_OR_CONTRADICTED';
   if (!contradictions.length) {
-    if (checked.mode === 'refund') verdict = hasVerifiedHistory ? 'REFUND_AND_HISTORICAL_BALANCE_DELTA_VERIFIED' : hasObservedHistory ? 'REFUND_PROTOCOL_CREDIT_AND_BALANCE_DELTA_OBSERVED_UNATTRIBUTED' : 'REFUND_PROTOCOL_CREDIT_VERIFIED_DELIVERY_UNCONFIRMED';
-    else verdict = hasVerifiedHistory ? 'ALLOCATION_AND_HISTORICAL_BALANCE_DELTA_VERIFIED' : hasObservedHistory ? 'ALLOCATION_AND_HISTORICAL_BALANCE_DELTA_OBSERVED_UNATTRIBUTED' : 'ALLOCATION_AND_PROTOCOL_CREDIT_VERIFIED_DELIVERY_UNCONFIRMED';
+    if (checked.mode === 'refund') verdict = hasObservedHistory ? 'REFUND_PROTOCOL_CREDIT_AND_BALANCE_DELTA_OBSERVED_UNATTRIBUTED' : 'REFUND_PROTOCOL_CREDIT_VERIFIED_DELIVERY_UNCONFIRMED';
+    else verdict = hasObservedHistory ? 'ALLOCATION_AND_HISTORICAL_BALANCE_DELTA_OBSERVED_UNATTRIBUTED' : 'ALLOCATION_AND_PROTOCOL_CREDIT_VERIFIED_DELIVERY_UNCONFIRMED';
   }
   return {
     contradictions,

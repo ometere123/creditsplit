@@ -1,12 +1,19 @@
 import {describe,it,expect} from 'vitest';
 import {confirmedTransactionStorageKey,isSuccessfulFinalizedReceipt,makeConfirmedTransaction,makeSubmittedTransaction,markConfirmedTransactionSynchronized,parseConfirmedTransaction,parseSubmittedTransaction,reconcileConfirmedRead,recoveryMatchesWallet,submittedTransactionStorageKey} from '../lib/chain';
-import {parseGen,formatGen,bytes,settlementPresentation,validateCriteria,validateProjectInput,validateVerifiedSource} from '../lib/types';
+import {parseGen,formatGen,formatGenExact,sumWei,bytes,settlementPresentation,validateCriteria,validateProjectInput,validateVerifiedSource} from '../lib/types';
 const a='0x'+'1'.repeat(40),b='0x'+'2'.repeat(40),c='0x'+'3'.repeat(40),s='0x'+'4'.repeat(40);
 describe('funding and input invariants',()=>{
   it('preserves exact wei',()=>expect(parseGen('1.000000000000000001')).toBe(1000000000000000001n));
   it('rejects zero and scientific notation',()=>{expect(()=>parseGen('0')).toThrow();expect(()=>parseGen('1e9')).toThrow();});
   it('rejects excessive precision',()=>expect(()=>parseGen('0.0000000000000000001')).toThrow());
   it('formats values',()=>expect(formatGen('1250000000000000000')).toBe('1.25'));
+  it('formats reward allocations without truncating wei precision',()=>{
+    expect(formatGenExact('909090909090910')).toBe('0.00090909090909091');
+    expect(formatGenExact('545454545454545')).toBe('0.000545454545454545');
+    expect(formatGenExact('2000000000000000')).toBe('0.002');
+    expect(formatGenExact(1n)).toBe('0.000000000000000001');
+    expect(sumWei(['909090909090910','545454545454545','545454545454545'])).toBe(2000000000000000n);
+  });
   it('counts UTF-8 bytes',()=>expect(bytes('🎨')).toBe(4));
   it('accepts three distinct invitees',()=>expect(()=>validateProjectInput('A','B',[a,b,c],s)).not.toThrow());
   it('blocks sponsor self invitation',()=>expect(()=>validateProjectInput('A','B',[a,b,s],s)).toThrow());

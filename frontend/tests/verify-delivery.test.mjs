@@ -179,6 +179,55 @@ test('valid unanimous sponsor refund requires the sponsor and exact pool amount'
   assert.deepEqual(result.contradictions, []);
 });
 
+test('unresolved refund requires exactly four explicit true approvals', () => {
+  const malformedApprovals = [
+    undefined,
+    [],
+    [true, true, true],
+    [true, true, true, true, true],
+    [true, true, false, true],
+    [true, true, true, 'true'],
+    [true, true, true, 1],
+    [true, true, true, null],
+  ];
+  for (const approvals of malformedApprovals) {
+    const project = projectRecord({ refund: true, reason: 'UNRESOLVED_UNANIMOUS_EXIT' });
+    if (approvals === undefined) delete project.unresolved_refund_approvals;
+    else project.unresolved_refund_approvals = approvals;
+    const result = verdictFor({
+      project,
+      parent: parentRecord('approve_unresolved_refund'),
+      children: [childRecord(0, { to: SPONSOR, value: POOL })],
+    }, args([SPONSOR], [CHILDREN[0]], 'refund'));
+    assert.equal(result.verdict, 'INCONCLUSIVE_OR_CONTRADICTED');
+    assert.match(result.contradictions.join(' '), /exactly four explicit true/);
+  }
+});
+
+test('recruitment refund requires three boolean join slots with an unjoined contributor', () => {
+  const malformedJoinStates = [
+    undefined,
+    [],
+    [false],
+    [false, true],
+    [false, true, true, false],
+    [false, 'true', true],
+    [true, true, true],
+  ];
+  for (const joined of malformedJoinStates) {
+    const project = projectRecord({ refund: true, reason: 'RECRUITMENT_EXPIRED' });
+    if (joined === undefined) delete project.joined;
+    else project.joined = joined;
+    const result = verdictFor({
+      project,
+      parent: parentRecord('refund_unstarted_project'),
+      children: [childRecord(0, { to: SPONSOR, value: POOL })],
+    }, args([SPONSOR], [CHILDREN[0]], 'refund'));
+    assert.equal(result.verdict, 'INCONCLUSIVE_OR_CONTRADICTED');
+    assert.match(result.contradictions.join(' '), /exactly three boolean join slots/);
+  }
+});
+
 test('wrong refund beneficiary and refund method fail closed', () => {
   const result = verdictFor({
     project: projectRecord({ refund: true, reason: 'UNRESOLVED_UNANIMOUS_EXIT' }),
@@ -227,7 +276,7 @@ test('unrelated intervening activity blocks balance attribution', () => {
   assert.match(result.contradictions.join(' '), /unrelated/);
 });
 
-test('authoritative historical activity proof can establish a balance delta', () => {
+test('caller-supplied historical attribution cannot establish a balance delta', () => {
   const result = verdictFor({
     balanceEvidence: {
       beforeBlock: '1', afterBlock: '20',
@@ -235,7 +284,8 @@ test('authoritative historical activity proof can establish a balance delta', ()
       historicalAttribution: { supported: true, attributable: true, unrelatedActivity: false, gasWei: '0' },
     },
   });
-  assert.equal(result.verdict, 'ALLOCATION_AND_HISTORICAL_BALANCE_DELTA_VERIFIED');
+  assert.equal(result.verdict, 'ALLOCATION_AND_HISTORICAL_BALANCE_DELTA_OBSERVED_UNATTRIBUTED');
+  assert.equal(result.history.status, 'OBSERVED_UNATTRIBUTED');
 });
 
 test('unsupported historical queries and contradictory RPC evidence remain non-positive', () => {
@@ -254,7 +304,7 @@ test('malformed child provenance fails closed instead of throwing', () => {
   assert.match(result.contradictions.join(' '), /provenance parent is malformed/);
 });
 
-test('historical attribution can use the raw RPC block when the SDK record omits it', () => {
+test('raw RPC block boundaries still do not authorize caller-supplied attribution', () => {
   const fixture = report({
     parent: { ...parentRecord(), blockNumber: '0x10' },
     balanceEvidence: {
@@ -265,5 +315,5 @@ test('historical attribution can use the raw RPC block when the SDK record omits
   });
   fixture.parent.sdkTransaction = { supported: true, value: { to: CONTRACT, data: { calldata: { readable: '{"args":[2,]"method":"evaluate_contributions"}' } }, status: 'FINALIZED', result: 'MAJORITY_AGREE', execution: 'SUCCESS' } };
   const result = evaluateEvidence(fixture, args());
-  assert.equal(result.verdict, 'ALLOCATION_AND_HISTORICAL_BALANCE_DELTA_VERIFIED');
+  assert.equal(result.verdict, 'ALLOCATION_AND_HISTORICAL_BALANCE_DELTA_OBSERVED_UNATTRIBUTED');
 });

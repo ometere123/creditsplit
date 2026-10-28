@@ -52,6 +52,15 @@ export function formatGen(wei: string | bigint): string {
   const fraction = (amount%10n**18n).toString().padStart(18,'0').slice(0,4).replace(/0+$/,'');
   return major.toLocaleString('en-US')+(fraction?'.'+fraction:'');
 }
+export function formatGenExact(wei: string | bigint): string {
+  const amount = BigInt(wei || '0');
+  const major = amount/10n**18n;
+  const fraction = (amount%10n**18n).toString().padStart(18,'0').replace(/0+$/,'');
+  return major.toLocaleString('en-US')+(fraction?'.'+fraction:'');
+}
+export function sumWei(values: readonly (string | bigint)[]): bigint {
+  return values.reduce<bigint>((total,value)=>total+BigInt(String(value)),0n);
+}
 export function shortAddress(a: string): string { return a ? a.slice(0,6)+'…'+a.slice(-4):'—'; }
 export function formatDate(value: number): string { return value ? new Date(value*1000).toLocaleString() : 'Not scheduled'; }
 export function bytes(s: string): number {return new TextEncoder().encode(s).length;}
