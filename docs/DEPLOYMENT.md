@@ -22,6 +22,25 @@ The authoritative contract source changed in [`ab2344787a55ecd569c3dd12924d33a63
 | Exact-SHA CI for release-content commit | Previously verified source-release run [40670532365](https://github.com/ometere123/creditsplit/actions/runs/40670532365); final closeout CI is linked in the handoff |
 | Final documentation closeout | Reconciles current project 2 CLI/SDK evidence with current project 1 browser/refund evidence and historical deployments; it does not change the deployed contract or frontend source |
 
+### Source parity: repository LF versus deployed CRLF
+
+The tracked GitHub blob `contracts/Creditsplit.py` uses **LF** line endings: **46,274 bytes**, SHA-256 `26fe312ed90aa6bb918820e19dc8d19584f5eaf3777b08ec1996a7a8b6c077ca`. The deployed source reported by StudioNet `gen_getContractCode` uses **Windows CRLF** line endings: **47,179 bytes**, SHA-256 `309998d18ce351f45af55c34dcab3481c8bb923f74b9d2da5249e0039c3f6977`. There are **905** line endings, accounting exactly for the 905-byte size difference. Converting the tracked LF source to CRLF reproduces the deployed byte length and SHA-256 without modifying any code tokens. Thus the repository and registered source are content-equivalent after line-ending normalization; their **raw bytes are not identical**, and hashing the GitHub file without normalization will not produce the deployed digest.
+
+Reproduce both hashes locally from the tracked file without modifying it (run from repository root):
+
+```python
+from pathlib import Path
+from hashlib import sha256
+
+source = Path("contracts/Creditsplit.py").read_bytes()
+lf = source.replace(b"\r\n", b"\n")
+crlf = lf.replace(b"\n", b"\r\n")
+for label, payload in (("repository LF", lf), ("deployed CRLF", crlf)):
+    print(f"{label}: {len(payload):,} bytes; SHA-256 {sha256(payload).hexdigest()}")
+```
+
+This normalization explains the two digests; the recorded on-chain CRLF hash/length are from the deployment RPC evidence, not from a fresh network read in this note. Neither the Python contract nor the deployment was changed for this documentation clarification.
+
 Deployment command used for the current contract:
 
 ```text
