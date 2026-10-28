@@ -8,15 +8,19 @@ The leader must return exactly three bounded assessments:
 {
   "complete": true,
   "criteria_status": ["met", "partial", "not_met"],
+  "source_status": "verified",
+  "source_digest": "expected SHA-256 or empty for closed-evidence mode",
   "assessments": [{
     "relevance": "direct",
     "distinct": true,
     "correctness": true,
     "material_effect": "foundational",
     "attribution_consistent": true,
+    "claim_type": "factual",
     "factual_status": "supported",
     "evidence_ids": ["0:1"],
     "evidence_anchors": ["exact short packet excerpt"],
+    "source_evidence_anchors": ["exact short excerpt from the verified reference"],
     "justification": "bounded explanation"
   }],
   "reason": "bounded explanation"
@@ -29,7 +33,7 @@ Assembler source references are authenticated attribution claims, not an economi
 
 Exact normalized packet copies are handled per supporting packet and by registration order. A later cross-slot exact copy is capped at supporting weight 1 only when that specific packet is cited as evidence; a separate original packet from the same wallet remains independently assessable. Citing a clean packet alongside a copied packet cannot conceal the copied evidence. The earlier registered packet remains independently assessable. This is not a real-world authorship oracle. Substantial paraphrase and shared technical language remain semantic validator judgments rather than string-match rejection.
 
-Validators independently rerun the assessment over the same frozen evidence. Agreement is required on completion, all three criterion statuses, every payment-controlling classification and the derived weights. Explanations and semantically equivalent supporting packet selections may differ. A valid JSON shape alone is never sufficient.
+Validators independently rerun the assessment over the same frozen evidence. In verified-source mode they independently retrieve the frozen URL, verify the exact SHA-256 and assess whether each source anchor actually supports the claimed factual contribution; source integrity alone is not proof of semantic relevance. A positive factual classification requires source-specific support, while a genuinely editorial or structural contribution may use `claim_type="nonfactual"` with `factual_status="not_applicable"` when its material effect is independently visible in the authenticated on-chain evidence. Agreement is required on completion, all three criterion statuses, every payment-controlling classification and the derived weights. Explanations and semantically equivalent supporting packet/source selections may differ. A valid JSON shape or matching weights alone is never sufficient.
 
 Completion and contribution merit are separate. An incomplete deliverable may retain honest informational assessments, but the contract deterministically sets settlement weights and amounts to [0,0,0] and emits the full sponsor refund. A successful completion uses the accepted bands. If validators disagree or evaluation errors, the project remains FROZEN: evidence, escrow and payout fields do not change and no child transfer is emitted. A later evaluation may retry the same frozen digest. The current release also supports `approve_unresolved_refund`, but only as a bounded unanimous exit requiring the sponsor and all three contributors to approve; it is not a sponsor-only cancellation or an administrator override.
 
@@ -39,7 +43,7 @@ Current contract [0xBfBF8E1AB95cbEfF732aa541840f55C222f2c80D](https://explorer-s
 
 The current browser project `1` registered the immutable official protocol reference with digest `a7cf6df48f9ee08041ecdfabd016cdab45fec9a4b938ca302f3ea8ac50170c05`, completed the three-wallet evidence lifecycle and froze digest `0013e6a785f751e5dc2ba07dd92829247f986c1d545bcd49d538fc2370c813dc`. Evaluations [`0x21573da22ec0642d1e66e8e4a1be1b42ef1424236b73992085322ee52b5ad63c`](https://explorer-studio.genlayer.com/tx/0x21573da22ec0642d1e66e8e4a1be1b42ef1424236b73992085322ee52b5ad63c) and [`0xf305258f91e5c0454b76ad3290be9fdda472931ebb659a23b89567c37e6d2471`](https://explorer-studio.genlayer.com/tx/0xf305258f91e5c0454b76ad3290be9fdda472931ebb659a23b89567c37e6d2471) both finalized `MAJORITY_DISAGREE`; no payment-controlling decision was stored. Four participant approvals then completed the conditional unresolved exit, parent [`0x166db01ed7a20af34051e9bc8cc021f7ff6d4e595eab5737b5a7010bfaff87cf`](https://explorer-studio.genlayer.com/tx/0x166db01ed7a20af34051e9bc8cc021f7ff6d4e595eab5737b5a7010bfaff87cf), with refund child [`0x5902080a9d06cd5076646fc4dfa92d042138e24d78a07ac76623a259deedab0e`](https://explorer-studio.genlayer.com/tx/0x5902080a9d06cd5076646fc4dfa92d042138e24d78a07ac76623a259deedab0e) carrying `value_credited=true` but no child execution success claim.
 
-The accepted `[5,3,1]` source-backed project and the separate Project 2 browser payout belong to historical deployments, not the current `0xBfBF...` address. Their packets are registered on-chain text; they are not externally sourced and do not prove real-world authorship. The historical transaction ledger is in `DEPLOYMENT.md`.
+The current CLI/SDK project `2` used the same commit-pinned reference, froze evidence digest `3a1ff2fa8320acc1ed82170205f46e3b4134bab4471165798de692b0367c2ef5`, and evaluated once in [`0xecffe0cb59c0d99f331f486188e90f197fecc5bb920665fe2deb765425f8e972`](https://explorer-studio.genlayer.com/tx/0xecffe0cb59c0d99f331f486188e90f197fecc5bb920665fe2deb765425f8e972). It finalized `MAJORITY_AGREE` with leader `SUCCESS`, criteria `met/met/met`, and `[5,3,3]`; the validator vote summary was `AGREE,DISAGREE,AGREE,AGREE,DISAGREE`. The final readback is `SETTLEMENT_EMITTED / EMITTED_UNVERIFIED`; child sends were `FINALIZED / NO_MAJORITY / value_credited=true`, so no child execution success is claimed. This is the current accepted source-backed assessment. The historical `[5,3,1]` assessment and older payout remain separate evidence. None of these records proves real-world authorship or non-collusion.
 
 ## Historical live evidence
 

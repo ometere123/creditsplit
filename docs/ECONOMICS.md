@@ -23,9 +23,23 @@ The current browser-tested project 1 funded `1000000000000000` wei, completed re
 | Settlement label | `EMITTED_UNVERIFIED` |
 | Reason | `UNRESOLVED_UNANIMOUS_EXIT` |
 | Refund child | [`0x5902080a9d06cd5076646fc4dfa92d042138e24d78a07ac76623a259deedab0e`](https://explorer-studio.genlayer.com/tx/0x5902080a9d06cd5076646fc4dfa92d042138e24d78a07ac76623a259deedab0e), `FINALIZED / NO_MAJORITY / value_credited=true` |
-| Current accounting | `active_escrow_wei=0`, `total_dispatched_wei=1000000000000000` |
+| Accounting after project 1, before project 2 | `active_escrow_wei=0`, `project_count=1`, `total_dispatched_wei=1000000000000000` |
 
-The refund child is described conservatively: `value_credited=true` proves the child value was credited at the protocol layer, not successful child consensus or a universal callback. No exact sponsor balance delta is claimed because no pre-refund balance snapshot was captured. The accepted source-backed payout on `0x1524...` and the successful native payout on `0x03EEC...` are preserved below as historical evidence and are not current-contract results.
+The refund child is described conservatively: `value_credited=true` proves the child value was credited at the protocol layer, not successful child consensus or a universal callback. No exact sponsor balance delta is claimed because no pre-refund balance snapshot was captured.
+
+## Current project 2 source-backed settlement
+
+The current contract's project 2 used the pinned official protocol reference with digest `a7cf6df48f9ee08041ecdfabd016cdab45fec9a4b938ca302f3ea8ac50170c05` and a user-authorized `2000000000000000` wei pool. Its first evaluation [`0xecffe0cb59c0d99f331f486188e90f197fecc5bb920665fe2deb765425f8e972`](https://explorer-studio.genlayer.com/tx/0xecffe0cb59c0d99f331f486188e90f197fecc5bb920665fe2deb765425f8e972) finalized `MAJORITY_AGREE` with leader `SUCCESS`; readback recorded all three criteria `met` and accepted weights `[5,3,3]`.
+
+| Recipient slot | Weight | Allocated wei |
+| --- | ---: | ---: |
+| A | 5 | `909090909090910` |
+| B | 3 | `545454545454545` |
+| C | 3 | `545454545454545` |
+
+The amounts sum exactly to `2000000000000000` wei. Triggered child sends A [`0xa787662d35adba760b0c133ab7f903381723d74ad5312276be5e3c8c1f009a09`](https://explorer-studio.genlayer.com/tx/0xa787662d35adba760b0c133ab7f903381723d74ad5312276be5e3c8c1f009a09), B [`0x2ac4419cf1fa360c678e003c7c1bb9a1538f89898a5fe8f46293a0ea3a46b261`](https://explorer-studio.genlayer.com/tx/0x2ac4419cf1fa360c678e003c7c1bb9a1538f89898a5fe8f46293a0ea3a46b261) and C [`0x6617691d6d893b2efb8111d24724efdd0a1cfc021bf587738590859bf9c82aff`](https://explorer-studio.genlayer.com/tx/0x6617691d6d893b2efb8111d24724efdd0a1cfc021bf587738590859bf9c82aff) each finalized `NO_MAJORITY` with `value_credited=true`; no child execution success is claimed. Final accounting readback was `active_escrow_wei=0`, `project_count=2`, `total_dispatched_wei=3000000000000000` wei, combining the earlier 0.001 GEN unanimous refund and this 0.002 GEN allocation. Final recipient balances were read through RPC, but no exact deltas are claimed because pre-settlement snapshots were not captured.
+
+The accepted source-backed payout on `0x1524...` and successful native payout on `0x03EEC...` remain below as historical evidence; they are not current-contract results.
 
 ## Historical 0x03EEC payout evidence
 
