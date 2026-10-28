@@ -5,7 +5,7 @@
 - A successful evaluation or eligible unstarted refund decreases active escrow by that project's full principal and increments total_dispatched by the same amount.
 - On a passing evaluation, accepted weight_i is one of 0, 1, 3 or 5 and the sum is positive. The contract computes amount_i=floor(pool*weight_i/sum(weights)); the integer remainder goes to the highest weight and lowest slot on ties. The model never supplies amounts or recipients.
 - On an incomplete evaluation, informational contribution merit is retained for auditability, but settlement weights and amounts are [0,0,0] and the sponsor receives the full pool.
-- A failed or inconclusive evaluation does not change escrow, payout fields or settlement state. A later evaluation may retry the same frozen digest; there is no sponsor-only cancellation, administrator rescue or manual claim path.
+- A failed or inconclusive evaluation does not change escrow, payout fields or settlement state. A later evaluation may retry the same frozen digest. The current release adds only a bounded unanimous exit: `approve_unresolved_refund` requires the sponsor and all three contributors to approve a still-FROZEN project, cannot override a successful adjudication and emits the full pool once. There is no sponsor-only cancellation, administrator rescue or manual claim path.
 - There is no owner rescue, hidden commission, manual payout claim, sponsor-controlled allocation or wallet-based fee skim.
 - Finalization emits EOA GEN messages. EMITTED_UNVERIFIED means only that the contract reached a terminal state and emitted messages; it does not prove child execution or beneficiary credit. Inspect each child transaction and balance delta. There is no blind automatic resend.
 - Protocol fees are distinct from the locked project pool and must be funded by initiating wallets. The browser passes sponsor value separately from the SDK-estimated network fee.
@@ -13,27 +13,19 @@
 
 ## Current hardened deployment
 
-Current contract: [0x1524e854C69cF5FBBB28f6F0f1828197C2839ecB](https://explorer-studio.genlayer.com/address/0x1524e854C69cF5FBBB28f6F0f1828197C2839ecB), source SHA-256 `73fd5a760a2ce3c70af3d03802fd2439f2da29c671000a817fdbfab3f5d5ffa3`.
+Current contract: [0xBfBF8E1AB95cbEfF732aa541840f55C222f2c80D](https://explorer-studio.genlayer.com/address/0xBfBF8E1AB95cbEfF732aa541840f55C222f2c80D), source SHA-256 `309998d18ce351f45af55c34dcab3481c8bb923f74b9d2da5249e0039c3f6977`.
 
-The current verified-source project 1 funded `1000000000000000` wei, completed all three criteria, and finalized with weights [5,3,1]. The deterministic recorded allocations were:
+The current browser-tested project 1 funded `1000000000000000` wei, completed recruitment and froze evidence digest `0013e6a785f751e5dc2ba07dd92829247f986c1d545bcd49d538fc2370c813dc`. Its two evaluations [`0x21573da22ec0642d1e66e8e4a1be1b42ef1424236b73992085322ee52b5ad63c`](https://explorer-studio.genlayer.com/tx/0x21573da22ec0642d1e66e8e4a1be1b42ef1424236b73992085322ee52b5ad63c) and [`0xf305258f91e5c0454b76ad3290be9fdda472931ebb659a23b89567c37e6d2471`](https://explorer-studio.genlayer.com/tx/0xf305258f91e5c0454b76ad3290be9fdda472931ebb659a23b89567c37e6d2471) finalized `MAJORITY_DISAGREE`, so it recorded no contribution weights, no allocation and no contributor payout. All four principals then approved `approve_unresolved_refund`; the terminal parent [`0x166db01ed7a20af34051e9bc8cc021f7ff6d4e595eab5737b5a7010bfaff87cf`](https://explorer-studio.genlayer.com/tx/0x166db01ed7a20af34051e9bc8cc021f7ff6d4e595eab5737b5a7010bfaff87cf) emitted the entire pool to the sponsor.
 
-| Recipient | Weight | Amount |
-| --- | ---: | ---: |
-| A | 5 | 555555555555556 wei |
-| B | 3 | 333333333333333 wei |
-| C | 1 | 111111111111111 wei |
+| Current terminal field | Value |
+| --- | --- |
+| Project state | `REFUND_EMITTED` |
+| Settlement label | `EMITTED_UNVERIFIED` |
+| Reason | `UNRESOLVED_UNANIMOUS_EXIT` |
+| Refund child | [`0x5902080a9d06cd5076646fc4dfa92d042138e24d78a07ac76623a259deedab0e`](https://explorer-studio.genlayer.com/tx/0x5902080a9d06cd5076646fc4dfa92d042138e24d78a07ac76623a259deedab0e), `FINALIZED / NO_MAJORITY / value_credited=true` |
+| Current accounting | `active_escrow_wei=0`, `total_dispatched_wei=1000000000000000` |
 
-The evaluation is [0xf13ff7565c483b16a05c8ad892277d30ca660997aa9d534a9e8c8cb2809db27a](https://explorer-studio.genlayer.com/tx/0xf13ff7565c483b16a05c8ad892277d30ca660997aa9d534a9e8c8cb2809db27a). Triggered sends are A [0x22b6747bb94ece5ac0d587f5e2344cea1fd23b63122e3a7fa1572d22900e65ab](https://explorer-studio.genlayer.com/tx/0x22b6747bb94ece5ac0d587f5e2344cea1fd23b63122e3a7fa1572d22900e65ab), B [0x34b0f1499626c7c41e07cb1681ab09c7d66ba11b3fe45c3b4935c5bc18246c79](https://explorer-studio.genlayer.com/tx/0x34b0f1499626c7c41e07cb1681ab09c7d66ba11b3fe45c3b4935c5bc18246c79) and C [0x2f6c7a1550856f84b7b850de11084436d3418295fa3ef1f12ac749cdeedc6329](https://explorer-studio.genlayer.com/tx/0x2f6c7a1550856f84b7b850de11084436d3418295fa3ef1f12ac749cdeedc6329). Each child record finalized `NO_MAJORITY` with `value_credited=true` and no child execution hash; direct balance readback nevertheless confirmed exact recipient deltas equal to the allocations.
-
-| Recipient | Final RPC balance |
-| --- | ---: |
-| A | Pre/post delta `+555555555555556` wei |
-| B | Pre/post delta `+333333333333333` wei |
-| C | Pre/post delta `+111111111111111` wei |
-
-The contract correctly exposes `EMITTED_UNVERIFIED`: the parent allocated and emitted messages, while the child records have no execution hash. Independent balance readback confirmed the exact deltas in this run, but the protocol does not provide a universal callback proving every future EOA delivery. The frontend must distinguish allocation, emission, child execution evidence and beneficiary credit.
-
-The successful native payout for 0.01 GEN is preserved below as historical `0x03EEC...` evidence. The current source-verified project is not used to claim a successful payout.
+The refund child is described conservatively: `value_credited=true` proves the child value was credited at the protocol layer, not successful child consensus or a universal callback. No exact sponsor balance delta is claimed because no pre-refund balance snapshot was captured. The accepted source-backed payout on `0x1524...` and the successful native payout on `0x03EEC...` are preserved below as historical evidence and are not current-contract results.
 
 ## Historical 0x03EEC payout evidence
 

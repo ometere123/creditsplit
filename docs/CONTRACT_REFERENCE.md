@@ -19,6 +19,7 @@
 | `freeze_project(id)` | Canonicalizes the brief, criteria, roles, packets, revisions, final text, source refs and responses, then stores a SHA-256 evidence digest. |
 | `evaluate_contributions(id)` | Runs the leader and independent validators over the frozen evidence. Only validator-agreed payment classifications can settle. |
 | `refund_unstarted_project(id)` | Permissionless full refund after recruitment expiry if all three wallets did not join. |
+| `approve_unresolved_refund(id)` | Records one sponsor/contributor approval for a FROZEN project. When all four immutable principals approve, emits the full principal to the sponsor exactly once; it cannot override a successful adjudication or provide unilateral cancellation. |
 
 `create_project` is retained for compatibility and supplies generic default criteria. It is not a separate escrow or settlement implementation: it reaches the same authenticated, frozen-evidence, validator-agreement and deterministic accounting path as `create_project_with_criteria`. The frontend uses the custom-criteria method so each sponsor can define the three requirements explicitly.
 
@@ -40,4 +41,4 @@ Completion is independent of merit. If all three criteria are met and the final 
 
 ## Current deployment
 
-The verified current address is [`0x1524e854C69cF5FBBB28f6F0f1828197C2839ecB`](https://explorer-studio.genlayer.com/address/0x1524e854C69cF5FBBB28f6F0f1828197C2839ecB), source SHA-256 `73fd5a760a2ce3c70af3d03802fd2439f2da29c671000a817fdbfab3f5d5ffa3`. Its source provenance and live transaction ledger are in [`docs/DEPLOYMENT.md`](DEPLOYMENT.md) and [`docs/REVIEW_EVIDENCE.md`](REVIEW_EVIDENCE.md). The previous `0xEFf0...` and `0x03EEC...` addresses and their lifecycles remain historical evidence.
+The verified current address is [`0xBfBF8E1AB95cbEfF732aa541840f55C222f2c80D`](https://explorer-studio.genlayer.com/address/0xBfBF8E1AB95cbEfF732aa541840f55C222f2c80D), source SHA-256 `309998d18ce351f45af55c34dcab3481c8bb923f74b9d2da5249e0039c3f6977`. Its source provenance and live transaction ledger are in [`docs/DEPLOYMENT.md`](DEPLOYMENT.md) and [`docs/REVIEW_EVIDENCE.md`](REVIEW_EVIDENCE.md). The previous `0xEFf0...`, `0x1524...` and `0x03EEC...` addresses and their lifecycles remain historical evidence.
