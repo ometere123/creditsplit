@@ -163,6 +163,13 @@ function asReceiptRecord(value:unknown):ReceiptRecord|null {
   return typeof value==='object'&&value!==null?value as ReceiptRecord:null;
 }
 
+function isBenignQuorumCancellation(value:ReceiptRecord|null):boolean {
+  if(!value||value.execution_result!=='ERROR'||value.vote!=='idle') return false;
+  if(value.error_code!=='CONSENSUS_VALIDATOR_QUORUM_REACHED') return false;
+  const rawError=asReceiptRecord(value.raw_error);
+  return Array.isArray(rawError?.causes)&&rawError.causes.includes('VALIDATOR_QUORUM_REACHED');
+}
+
 /**
  * StudioNet's genlayer-js 1.1.8 simplified receipt omits txExecutionResultName.
  * In that shape, the authoritative successful parent signal is FINALIZED plus
@@ -227,7 +234,8 @@ export function isSuccessfulFinalizedReceipt(value:unknown):boolean {
         if(!validator) return false;
         const executionResult=validator.execution_result;
         if(executionResult!==undefined&&
-           (typeof executionResult!=='string'||!['SUCCESS','FINISHED_WITH_RETURN'].includes(executionResult))) return false;
+           (typeof executionResult!=='string'||
+            (!['SUCCESS','FINISHED_WITH_RETURN'].includes(executionResult)&&!isBenignQuorumCancellation(validator)))) return false;
       }
     }
   }

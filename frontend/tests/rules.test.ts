@@ -53,6 +53,27 @@ describe('transaction recovery scope',()=>{
   });
   it('accepts the pinned SDK simplified StudioNet success receipt',()=>expect(isSuccessfulFinalizedReceipt({status_name:'FINALIZED',result_name:'MAJORITY_AGREE',consensus_data:{leader_receipt:[{execution_result:'SUCCESS'}]}})).toBe(true));
   it('accepts a complete explicit successful StudioNet receipt',()=>expect(isSuccessfulFinalizedReceipt({statusName:'FINALIZED',resultName:'MAJORITY_AGREE',txExecutionResultName:'FINISHED_WITH_RETURN',consensusData:{leader_receipt:[{execution_result:'SUCCESS'}]}})).toBe(true));
+  it('accepts quorum-cancelled validator work after an agreed successful execution',()=>expect(isSuccessfulFinalizedReceipt({
+    status:7,
+    result:6,
+    consensus_data:{
+      leader_receipt:[{execution_result:'SUCCESS'}],
+      validators:[
+        {execution_result:'SUCCESS',vote:'agree'},
+        {execution_result:'ERROR',vote:'idle',error_code:'CONSENSUS_VALIDATOR_QUORUM_REACHED',raw_error:{causes:['VALIDATOR_QUORUM_REACHED']}}
+      ]
+    }
+  })).toBe(true));
+  it('rejects a validator error that is not the protocol quorum cancellation',()=>expect(isSuccessfulFinalizedReceipt({
+    statusName:'FINALIZED',
+    resultName:'MAJORITY_AGREE',
+    consensusData:{leader_receipt:[{execution_result:'SUCCESS'}],validators:[{execution_result:'ERROR',vote:'idle',error_code:'MODEL_ERROR'}]}
+  })).toBe(false));
+  it('rejects a quorum error when the validator did not idle',()=>expect(isSuccessfulFinalizedReceipt({
+    statusName:'FINALIZED',
+    resultName:'MAJORITY_AGREE',
+    consensusData:{leader_receipt:[{execution_result:'SUCCESS'}],validators:[{execution_result:'ERROR',vote:'agree',error_code:'CONSENSUS_VALIDATOR_QUORUM_REACHED',raw_error:{causes:['VALIDATOR_QUORUM_REACHED']}}]}
+  })).toBe(false));
   it('rejects finalized disagreement even when the status is final',()=>expect(isSuccessfulFinalizedReceipt({status_name:'FINALIZED',result_name:'MAJORITY_DISAGREE',consensus_data:{leader_receipt:[{execution_result:'ERROR'}]}})).toBe(false));
   it('rejects FINISHED_WITH_RETURN when consensus disagrees',()=>expect(isSuccessfulFinalizedReceipt({statusName:'FINALIZED',resultName:'MAJORITY_DISAGREE',txExecutionResultName:'FINISHED_WITH_RETURN',consensusData:{leader_receipt:[{execution_result:'SUCCESS'}]}})).toBe(false));
   it('rejects FINISHED_WITH_RETURN when the leader failed',()=>expect(isSuccessfulFinalizedReceipt({statusName:'FINALIZED',resultName:'MAJORITY_AGREE',txExecutionResultName:'FINISHED_WITH_RETURN',consensusData:{leader_receipt:[{execution_result:'ERROR'}]}})).toBe(false));
