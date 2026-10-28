@@ -63,7 +63,7 @@ export function parseArgs(argv) {
   if (!values.contract || !ADDRESS.test(values.contract)) throw new Error('--contract must be an EVM address');
   if (!Number.isInteger(Number(values.project)) || Number(values.project) < 0) throw new Error('--project must be a non-negative integer');
   if (!HASH.test(values.parent)) throw new Error('--parent must be a transaction hash');
-  if (values.recipient.length !== values.child.length) throw new Error('--recipient and --child must contain the same number of entries');
+  if (values.child.length > values.recipient.length) throw new Error('--child cannot contain more entries than the expected recipient slots');
   if (!values.recipient.length) throw new Error('At least one expected recipient and child are required');
   if (!values.recipient.every((value) => ADDRESS.test(value))) throw new Error('Every --recipient value must be an EVM address');
   if (!values.child.every((value) => HASH.test(value))) throw new Error('Every --child value must be a transaction hash');
@@ -309,10 +309,12 @@ function verifyReadback(project, recipients, children, contract, mode) {
     if (project.completion !== true || project.decision?.complete !== true) contradictions.push('Contributor settlement is not marked complete');
     if (normalizeList(project.criteria_status).length !== 3 || !normalizeList(project.criteria_status).every((value) => value === 'met')) contradictions.push('All three acceptance criteria are not explicitly met');
     if (amounts.length !== 3 || contributors.length !== 3 || weights.length !== 3) contradictions.push('Contributor settlement is missing a complete three-slot allocation');
-    if (amounts.some((value) => value === null)) contradictions.push('One or more allocations are not integer wei');
+    if (amounts.some((value) => value === null || value < 0n)) contradictions.push('One or more allocations are not non-negative integer wei');
+    if (weights.some((value) => !Number.isInteger(value) || ![0, 1, 3, 5].includes(value))) contradictions.push('One or more contribution weights are outside the contract band set');
+    if (amounts.length === 3 && weights.length === 3 && amounts.every((value) => value !== null) && weights.some((weight, index) => weight === 0 && amounts[index] !== 0n)) contradictions.push('A zero-weight contributor has a non-zero allocation');
     if (pool !== null && amounts.length === 3 && amounts.every((value) => value !== null) && amounts.reduce((sum, value) => sum + value, 0n) !== pool) contradictions.push('Deterministic allocations do not conserve the project pool');
     if (recipients.length !== 3 || recipients.some((recipient, index) => !addressEqual(contributors[index], recipient))) contradictions.push('Expected payout recipients do not exactly match authenticated contributor slots');
-    return { contradictions, mode: settlement.mode, reason: settlement.reason, poolWei: pool?.toString(), amountsWei: amounts.map((value) => value?.toString() ?? null), expectedMethods: settlement.methods, expectedRecipients: contributors };
+    return { contradictions, mode: settlement.mode, reason: settlement.reason, poolWei: pool?.toString(), amountsWei: amounts.map((value) => value?.toString() ?? null), expectedMethods: settlement.methods, expectedRecipients: contributors, positiveSlots: amounts.map((value, index) => value !== null && value > 0n ? index : -1).filter((index) => index >= 0) };
   }
 
   if (settlement.mode === 'refund') {
@@ -344,8 +346,9 @@ function chainIdIsStudio(value) {
   return typeof value === 'string' && value.toLowerCase() === STUDIO_CHAIN_ID;
 }
 
-function expectedValues(checked, children) {
-  return checked.amountsWei.length ? checked.amountsWei : [checked.poolWei];
+function expectedValues(checked) {
+  if (checked.mode === 'payout') return (checked.amountsWei ?? []).filter((value) => value !== null && asWei(value) > 0n);
+  return [checked.poolWei];
 }
 
 function evaluateHistoricalEvidence(balanceEvidence, parentRecord, children, checked) {
@@ -356,7 +359,7 @@ function evaluateHistoricalEvidence(balanceEvidence, parentRecord, children, che
     contradictions: [],
   };
   if (!result.deltas) return result;
-  const expected = expectedValues(checked, children);
+  const expected = expectedValues(checked);
   if (result.deltas.length !== expected.length) {
     result.contradictions.push('Historical balance evidence does not cover every expected beneficiary');
     result.status = 'CONTRADICTED';
@@ -397,9 +400,8 @@ function evaluateHistoricalEvidence(balanceEvidence, parentRecord, children, che
 
 function triggeredIdsMatch(triggered, expected) {
   if (!triggered?.supported || !Array.isArray(triggered.value)) return false;
-  const actual = canonicalSet(triggered.value);
-  const wanted = canonicalSet(expected);
-  return actual.size === wanted.size && [...actual].every((hash) => wanted.has(hash));
+  if (triggered.value.length !== expected.length) return false;
+  return triggered.value.every((hash, index) => typeof hash === 'string' && typeof expected[index] === 'string' && hash.toLowerCase() === expected[index].toLowerCase());
 }
 
 function verifyChildren(report, args, checked) {
@@ -409,9 +411,11 @@ function verifyChildren(report, args, checked) {
   const parentTriggered = report.parent?.transaction?.value?.triggeredTransactions;
   if (parentTriggered !== undefined && !triggeredIdsMatch({ supported: true, value: parentTriggered }, args.child)) contradictions.push('Parent transaction child list contradicts the supplied child hashes');
   if (children.length !== args.child.length) contradictions.push('Required child transaction records are missing');
-  const expected = expectedValues(checked, children);
+  const expected = expectedValues(checked);
+  const expectedSlots = checked.mode === 'payout' ? (checked.positiveSlots ?? []) : [0];
   const seen = new Set();
   children.forEach((child, index) => {
+    const slot = expectedSlots[index];
     const childRecord = child.transaction?.value;
     if (seen.has(child.hash.toLowerCase())) contradictions.push(`Child ${index} transaction hash is duplicated`);
     seen.add(child.hash.toLowerCase());
@@ -421,9 +425,9 @@ function verifyChildren(report, args, checked) {
     }
     if (childRecord.hash && childRecord.hash.toLowerCase() !== child.hash.toLowerCase()) contradictions.push(`Child ${index} record hash does not match the requested hash`);
     if (!addressEqual(childRecord.from, args.contract)) contradictions.push(`Child ${index} does not originate from the Creditsplit contract`);
-    if (!addressEqual(childRecord.to, args.recipient[index])) contradictions.push(`Child ${index} recipient differs from the expected beneficiary`);
+    if (slot === undefined || !addressEqual(childRecord.to, args.recipient[slot])) contradictions.push(`Child ${index} recipient differs from the expected beneficiary`);
     if (childRecord.value === undefined || asWei(childRecord.value) === null) contradictions.push(`Child ${index} transfer amount is missing or not integer wei`);
-    else if (asWei(childRecord.value) !== asWei(expected[index])) contradictions.push(`Child ${index} value differs from the deterministic allocation or refund amount`);
+    else if (slot === undefined || asWei(childRecord.value) !== asWei(expected[index])) contradictions.push(`Child ${index} value differs from the deterministic allocation or refund amount`);
     if (childRecord.triggeredBy !== undefined) {
       if (typeof childRecord.triggeredBy !== 'string' || !HASH.test(childRecord.triggeredBy)) contradictions.push(`Child ${index} provenance parent is malformed`);
       else if (childRecord.triggeredBy.toLowerCase() !== args.parent.toLowerCase()) contradictions.push(`Child ${index} provenance points to a different parent`);
@@ -433,7 +437,7 @@ function verifyChildren(report, args, checked) {
     if (child.summary?.issues?.length) contradictions.push(...child.summary.issues.map((issue) => `Child ${index}: ${issue}`));
     if (child.summary?.result && !['NO_MAJORITY', 'MAJORITY_AGREE'].includes(child.summary.result)) contradictions.push(`Child ${index} has an explicit unsuccessful result: ${child.summary.result}`);
     if (child.evmReceipt?.value?.receiptStatus === 'REVERTED') contradictions.push(`Child ${index} has a reverted EVM receipt`);
-    if (child.code?.supported && child.code.value && child.code.value !== '0x' && child.code.value !== '0x0') contradictions.push(`Beneficiary ${index} is not an EOA according to eth_getCode`);
+    if (child.code?.supported && child.code.value && child.code.value !== '0x' && child.code.value !== '0x0') contradictions.push(`Beneficiary ${slot ?? index} is not an EOA according to eth_getCode`);
   });
   return contradictions;
 }
