@@ -19,7 +19,7 @@ Results are evidence records, not self-assigned portal scores. Current-contract 
 | Runtime dependency audit | root npm audit --omit=dev --audit-level=high and frontend npm audit --audit-level=high | No high-severity runtime/frontend findings; root CLI development-tree advisories are tracked separately |
 | Secret scan | CI tracked-source scan excluding lockfiles | Clean |
 
-The contract source hash was verified locally as `309998D18CE351F45AF55C34DCAB3481C8BB923F74B9D2DA5249E0039C3F6977`, and the current frontend receipt verifier was tested in commit `825ed8d4743337fbc93ca6e317c27cb240b1700d`. The post-closeout exact-SHA CI run is reported with the final `main` commit in the release handoff; older CI runs are not reused as proof for that final commit.
+The contract source hash was verified locally as `309998D18CE351F45AF55C34DCAB3481C8BB923F74B9D2DA5249E0039C3F6977`, and the current frontend receipt verifier was tested in commit `825ed8d4743337fbc93ca6e317c27cb240b1700d`. The release-content commit [`09944827b1cf30ebe59a2baec20068d643403990`](https://github.com/ometere123/creditsplit/commit/09944827b1cf30ebe59a2baec20068d643403990) passed [GitHub Actions run 40669931380](https://github.com/ometere123/creditsplit/actions/runs/40669931380). The final documentation-only commit is not used as evidence of new contract or frontend behavior.
 
 ## Current live contract evidence
 

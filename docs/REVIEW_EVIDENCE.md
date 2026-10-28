@@ -7,13 +7,14 @@ This ledger separates the authoritative current release from historical deployme
 | Item | Evidence |
 | --- | --- |
 | Contract source commit | [`ab2344787a55ecd569c3dd12924d33a63484a8de`](https://github.com/ometere123/creditsplit/commit/ab2344787a55ecd569c3dd12924d33a63484a8de) |
-| Final main commit | The exact post-closeout `main` commit is reported with the final CI run in the release handoff |
+| Release-content commit | [`09944827b1cf30ebe59a2baec20068d643403990`](https://github.com/ometere123/creditsplit/commit/09944827b1cf30ebe59a2baec20068d643403990) |
+| Final documentation closeout | This ledger is updated in a subsequent documentation-only commit; the source/deployment identity above is unchanged |
 | Contract source SHA-256 | `309998d18ce351f45af55c34dcab3481c8bb923f74b9d2da5249e0039c3f6977` |
 | Current contract | [`0xBfBF8E1AB95cbEfF732aa541840f55C222f2c80D`](https://explorer-studio.genlayer.com/address/0xBfBF8E1AB95cbEfF732aa541840f55C222f2c80D) |
 | Deployment | [`0xa21f4e7ce67d438583a1bbdef1a7282db6888feb9a9edcd31eec9fefc1219114`](https://explorer-studio.genlayer.com/tx/0xa21f4e7ce67d438583a1bbdef1a7282db6888feb9a9edcd31eec9fefc1219114), FINALIZED / MAJORITY_AGREE / SUCCESS |
 | Network | StudioNet chain `61999`, `https://studio.genlayer.com/api` |
 | Production | [`https://creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app) |
-| Exact-SHA source-release CI | Updated after the post-closeout push; the final run URL and SHA are reported in the release handoff |
+| Exact-SHA source-release CI | [GitHub Actions run 40669931380](https://github.com/ometere123/creditsplit/actions/runs/40669931380), successful on the release-content commit |
 
 The contract source last changed at `ab2344787a55ecd569c3dd12924d33a63484a8de`; `gen_getContractCode` returned 47,179 bytes with the exact source hash above, and the registered schema reports 19 methods (5 views, 14 writes), including `approve_unresolved_refund`. The current browser lifecycle below is the authoritative current-contract record; older deployment and payment records remain explicitly historical.
 

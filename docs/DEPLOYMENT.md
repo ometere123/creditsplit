@@ -18,8 +18,9 @@ The authoritative contract source changed in [`ab2344787a55ecd569c3dd12924d33a63
 | Initial readback | `get_project_count() = 0`; accounting had zero active escrow and zero dispatched GEN |
 | Current Vercel alias | [`https://creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app) |
 | Current Ready Vercel deployment | [`creditsplit-mftj0mn09-delealufejoel-4184s-projects.vercel.app`](https://creditsplit-mftj0mn09-delealufejoel-4184s-projects.vercel.app), deployment `dpl_F1KrmaYyjF6s1pq8nVTDyWtNfHg7` |
-| Final main commit | The exact post-closeout `main` commit is reported with the final CI run in the release handoff |
-| Exact-SHA CI | Updated for the post-closeout commit; the historical source-release run is not used for this source |
+| Release-content commit | [`09944827b1cf30ebe59a2baec20068d643403990`](https://github.com/ometere123/creditsplit/commit/09944827b1cf30ebe59a2baec20068d643403990) |
+| Exact-SHA CI for release-content commit | [GitHub Actions run 40669931380](https://github.com/ometere123/creditsplit/actions/runs/40669931380), both jobs successful |
+| Final documentation closeout | This ledger is updated in a subsequent documentation-only commit; it does not change the deployed contract or frontend source |
 
 Deployment command used for the current contract:
 
