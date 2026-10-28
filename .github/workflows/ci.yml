@@ -39,6 +39,8 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - run: node --check scripts/verify-delivery.mjs
+      - run: npm run test:e2e:connected
       - run: npm audit --audit-level=high
       - name: Scan tracked source for accidental secrets
         shell: bash

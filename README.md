@@ -35,6 +35,7 @@ All evidence is **public** and qualifying work is submitted under **CC BY 4.0** 
 - `tests/test_contract_offline.py` — offline adversarial logic harness (not Direct Mode).
 - `tests/direct/` — actual pinned GenLayer Testing Suite Direct Mode coverage.
 - `frontend/tests/` — deterministic form/wei input tests; `frontend/tests/e2e/` — Playwright responsive smoke coverage.
+- `frontend/scripts/verify-delivery.mjs` — read-only current-contract settlement and beneficiary-delivery evidence checker; it never signs, retries or broadcasts.
 - `docs/` — architecture, economics, security and reviewer evidence gates.
 - `.github/workflows/ci.yml` — test/build verification scaffold.
 
@@ -56,9 +57,13 @@ npm test
 npm run build
 npx playwright install chromium
 npm run test:e2e
+npm run test:e2e:connected
+npm run verify:delivery -- --help
 cp .env.example .env.local
 npm run dev
 ```
+
+`npm run test:e2e:connected` runs deterministic injected EIP-1193 fixtures for wallet/network changes, payable transaction construction, confirmed-write persistence after a failed read, read-only retry and duplicate-write protection. It is automated frontend evidence, not a replacement for Convert Chrome/Rabby or StudioNet consensus. The delivery verifier accepts a current project and transaction ledger and reports allocations separately from `EMITTED_UNVERIFIED` delivery; it only calculates a historical balance delta when both block tags are explicitly supplied.
 
 The repository and frontend each have a committed npm lockfile. Direct Mode pins the compatible `v0.2.16` GenVM universal bundle because `genlayer-test==0.29.2` downloads the legacy `genvm-universal.tar.xz` asset. The linter uses the same explicit version and validates the pinned `py-genlayer` hash.
 

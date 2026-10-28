@@ -124,6 +124,21 @@ The project was funded with `1000000000000000` wei (`0.001 GEN`) and used the sa
 
 The current run intentionally does **not** claim a contributor payout: the independent adjudication did not converge, so no payment-controlling decision was stored. The conditional exit is not a sponsor-only cancellation; it requires the sponsor and all three contributors to approve while the project is FROZEN. The sponsor's post-refund RPC balance was `97981000000000000000` wei; no pre-refund balance snapshot was captured, so an exact balance delta is not claimed.
 
+### Independent delivery verification procedure
+
+The repository now includes the read-only [`frontend/scripts/verify-delivery.mjs`](../frontend/scripts/verify-delivery.mjs) utility. It accepts the RPC, contract, project, parent settlement hash, beneficiary addresses and child hashes, then reads the project, parent/child transaction records and current balances. It checks the authenticated contributor slots, exact wei conservation, parent finality/consensus/leader execution, child recipient/value matching and `value_credited` fields. Optional `--before-block` and `--after-block` arguments are required before it calculates historical balance deltas; without them it does not subtract unrelated current observations.
+
+The verifier was run read-only against current project `2`, parent [`0xecffe0cb59c0d99f331f486188e90f197fecc5bb920665fe2deb765425f8e972`](https://explorer-studio.genlayer.com/tx/0xecffe0cb59c0d99f331f486188e90f197fecc5bb920665fe2deb765425f8e972), and child hashes listed below. It reproduced the `[5,3,3]` allocation and exact `2000000000000000` wei conservation, matched every child to its authenticated recipient and observed `value_credited=true`. The conservative verdict remains `ALLOCATION_AND_PROTOCOL_CREDIT_VERIFIED_DELIVERY_UNCONFIRMED`: the child records do not provide a successful child execution result, and no pre-settlement block snapshots were captured for this project.
+
+Example (read-only; it never signs or broadcasts):
+
+```text
+cd frontend
+npm run verify:delivery -- --rpc https://studio.genlayer.com/api --contract 0xBfBF8E1AB95cbEfF732aa541840f55C222f2c80D --project 2 --parent 0xecffe0cb59c0d99f331f486188e90f197fecc5bb920665fe2deb765425f8e972 --recipient 0x951e6B75530774fF82321a5ae54e14F778F0C855,0xac3AC69dC0Bde389256dD6748C75817ead9286D9,0xA7EeAE0E93793e3146Cb14b0700251B8b0EBADFB --child 0xa787662d35adba760b0c133ab7f903381723d74ad5312276be5e3c8c1f009a09,0x2ac4419cf1fa360c678e003c7c1bb9a1538f89898a5fe8f46293a0ea3a46b261,0x6617691d6d893b2efb8111d24724efdd0a1cfc021bf587738590859bf9c82aff
+```
+
+The verifier does not promote `EMITTED_UNVERIFIED`, `value_credited=true` or a current balance read into a universal delivery guarantee. A caller must provide reliable historical block tags to claim a balance delta.
+
 ## Current contract 0xBfBF: project 2 CLI/SDK source-backed adjudication
 
 This is the current-contract CLI/SDK evidence requested for the final closeout. It used `genlayer-js@1.1.8` on StudioNet `61999`, with sponsor `0xb845a69860ba4cdf19cfdc5afbaf2e20b6be86b0` and contributors A `0x951e6b75530774ff82321a5ae54e14f778f0c855`, B `0xac3ac69dc0bde389256dd6748c75817ead9286d9` and C `0xa7eeae0e93793e3146cb14b0700251b8b0ebadfb`. The user-authorized project pool was `0.002 GEN` (`2000000000000000` wei), supplied through the payable SDK transaction path. This was one new funded project; no contract or browser deployment was repeated.

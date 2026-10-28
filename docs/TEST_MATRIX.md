@@ -16,10 +16,12 @@ Results are evidence records, not self-assigned portal scores. Current-contract 
 | Frontend unit tests | npm test in frontend | 29 passed after the receipt-verification correction |
 | Production build | npm run build in frontend | Passed after the receipt-verification correction |
 | Browser smoke | npm run test:e2e in frontend | 2 Playwright projects passed: desktop and mobile navigation/form smoke |
+| Connected-wallet fixture | npm run test:e2e:connected in frontend | 4 executions passed across connected-desktop/mobile: injected EIP-1193 chain switching, account invalidation, one payable intent, confirmed-success persistence after forced read failure, read-only retry and duplicate-write prevention; deterministic fixtures, not live settlement evidence |
+| Read-only delivery verifier | `node scripts/verify-delivery.mjs` from `frontend/` against current project 2 | Passed against StudioNet readbacks: exact `2,000,000,000,000,000` wei conservation, recipient/child matching and parent `FINALIZED / MAJORITY_AGREE / leader SUCCESS`; correctly reports `EMITTED_UNVERIFIED` delivery as unconfirmed without historical balance blocks |
 | Runtime dependency audit | root npm audit --omit=dev --audit-level=high and frontend npm audit --audit-level=high | No high-severity runtime/frontend findings; root CLI development-tree advisories are tracked separately |
 | Secret scan | CI tracked-source scan excluding lockfiles | Clean |
 
-The contract source hash was verified locally as `309998D18CE351F45AF55C34DCAB3481C8BB923F74B9D2DA5249E0039C3F6977`, and the current frontend receipt verifier was tested in commit `825ed8d4743337fbc93ca6e317c27cb240b1700d`. The prior exact-source verification passed [GitHub Actions run 40670532365](https://github.com/ometere123/creditsplit/actions/runs/40670532365). This closeout adds evidence and documentation only; it does not change contract or frontend behavior.
+The contract source hash was verified locally as `309998D18CE351F45AF55C34DCAB3481C8BB923F74B9D2DA5249E0039C3F6977`, and the current frontend receipt verifier was tested in commit `825ed8d4743337fbc93ca6e317c27cb240b1700d`. The prior exact-source verification passed [GitHub Actions run 40670532365](https://github.com/ometere123/creditsplit/actions/runs/40670532365). This branch adds read-only verification and deterministic test infrastructure only; it does not change contract or production frontend behavior.
 
 ## Current live contract evidence
 
