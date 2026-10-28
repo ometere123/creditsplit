@@ -23,7 +23,7 @@ Results are evidence records, not self-assigned portal scores. Current-contract 
 | Runtime dependency audit | root npm audit --omit=dev --audit-level=high and frontend npm audit --audit-level=high | No high-severity runtime/frontend findings; root CLI development-tree advisories are tracked separately |
 | Secret scan | CI tracked-source scan excluding lockfiles | Clean |
 
-The contract source hash was verified locally as `309998D18CE351F45AF55C34DCAB3481C8BB923F74B9D2DA5249E0039C3F6977`, and the frontend receipt/recovery changes are covered by the merged `main` source. The exact release-content commit `ecb3bf2de275d72bafd641749b7b1c55439c4408` passed [GitHub Actions run 40774464152](https://github.com/ometere123/creditsplit/actions/runs/40774464152). This release adds frontend receipt classification, durable write coordination, exact reward presentation and verifier/test infrastructure only; it does not change contract or production deployment state.
+The contract source hash was verified locally as `309998D18CE351F45AF55C34DCAB3481C8BB923F74B9D2DA5249E0039C3F6977`, and the frontend receipt/recovery changes are covered by the merged `main` source. The final release-content commit `dc8fd0224eebfd6e4121cf76e17672577cc1f567` passed [GitHub Actions run 40779299377](https://github.com/ometere123/creditsplit/actions/runs/40779299377). The final follow-up corrects read-only StudioNet child-processing-order handling in the verifier and updates its evidence; it does not change contract or production deployment state.
 
 ## Current live contract evidence
 

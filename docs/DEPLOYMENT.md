@@ -18,8 +18,8 @@ The authoritative contract source changed in [`ab2344787a55ecd569c3dd12924d33a63
 | Initial readback | `get_project_count() = 0`; accounting had zero active escrow and zero dispatched GEN |
 | Current Vercel alias | [`https://creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app) |
 | Current Ready Vercel deployment | [`creditsplit-g7s6a1lgc-delealufejoel-4184s-projects.vercel.app`](https://creditsplit-g7s6a1lgc-delealufejoel-4184s-projects.vercel.app), deployment `dpl_8yqdUxaeUiFS6hCuVZavcH86eKdx` |
-| Release-content commit | `ecb3bf2de275d72bafd641749b7b1c55439c4408` (merged `main`; direct-source Vercel upload used this exact tree) |
-| Exact-SHA CI for release-content commit | [GitHub Actions run 40774464152](https://github.com/ometere123/creditsplit/actions/runs/40774464152) |
+| Release-content commit | `dc8fd0224eebfd6e4121cf76e17672577cc1f567` (final `main`; the direct-source Vercel upload used the preceding runtime-equivalent tree `ecb3bf2de275d72bafd641749b7b1c55439c4408`; the later commit changes the read-only delivery verifier, its tests and evidence docs only) |
+| Exact-SHA CI for final release-content commit | [GitHub Actions run 40779299377](https://github.com/ometere123/creditsplit/actions/runs/40779299377) |
 | Final release scope | Frontend/tooling/docs only; the Intelligent Contract, deployed address, storage and historical transactions are unchanged |
 
 ### Source parity: repository LF versus deployed CRLF

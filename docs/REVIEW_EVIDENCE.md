@@ -7,7 +7,7 @@ This ledger separates the authoritative current release from historical deployme
 | Item | Evidence |
 | --- | --- |
 | Contract source commit | [`ab2344787a55ecd569c3dd12924d33a63484a8de`](https://github.com/ometere123/creditsplit/commit/ab2344787a55ecd569c3dd12924d33a63484a8de) |
-| Release-content commit | `ecb3bf2de275d72bafd641749b7b1c55439c4408` (merged `main`; frontend/tooling/docs only) |
+| Release-content commit | `dc8fd0224eebfd6e4121cf76e17672577cc1f567` (final `main`; the later follow-up changes only the read-only delivery verifier, its tests and evidence docs; the deployed Next.js runtime remains the verified `ecb3bf2de275d72bafd641749b7b1c55439c4408` tree) |
 | Final release deployment | Existing Vercel project deployment `dpl_8yqdUxaeUiFS6hCuVZavcH86eKdx`, READY at [`https://creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app) |
 | Final documentation closeout | Reconciles current project 2 CLI/SDK evidence with project 1 browser/refund and older historical deployments; no contract source changed |
 | Contract source SHA-256 | `309998d18ce351f45af55c34dcab3481c8bb923f74b9d2da5249e0039c3f6977` |
@@ -15,7 +15,7 @@ This ledger separates the authoritative current release from historical deployme
 | Deployment | [`0xa21f4e7ce67d438583a1bbdef1a7282db6888feb9a9edcd31eec9fefc1219114`](https://explorer-studio.genlayer.com/tx/0xa21f4e7ce67d438583a1bbdef1a7282db6888feb9a9edcd31eec9fefc1219114), FINALIZED / MAJORITY_AGREE / SUCCESS |
 | Network | StudioNet chain `61999`, `https://studio.genlayer.com/api` |
 | Production | [`https://creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app) |
-| Exact-SHA source-release CI | Merged `main` commit `ecb3bf2de275d72bafd641749b7b1c55439c4408`: [GitHub Actions run 40774464152](https://github.com/ometere123/creditsplit/actions/runs/40774464152) |
+| Exact-SHA source-release CI | Final `main` commit `dc8fd0224eebfd6e4121cf76e17672577cc1f567`: [GitHub Actions run 40779299377](https://github.com/ometere123/creditsplit/actions/runs/40779299377) |
 
 The contract source last changed at `ab2344787a55ecd569c3dd12924d33a63484a8de`; `gen_getContractCode` returned 47,179 bytes with the exact source hash above, and the registered schema reports 19 methods (5 views, 14 writes), including `approve_unresolved_refund`. The current browser project 1 and current CLI/SDK project 2 records below are authoritative current-contract evidence; older deployment and payment records remain explicitly historical.
 
