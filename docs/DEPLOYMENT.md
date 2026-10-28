@@ -17,10 +17,10 @@ The authoritative contract source changed in [`ab2344787a55ecd569c3dd12924d33a63
 | Registered schema | 19 methods: 5 views and 14 writes, including `approve_unresolved_refund` |
 | Initial readback | `get_project_count() = 0`; accounting had zero active escrow and zero dispatched GEN |
 | Current Vercel alias | [`https://creditsplit-sigma.vercel.app`](https://creditsplit-sigma.vercel.app) |
-| Current Ready Vercel deployment | [`creditsplit-mftj0mn09-delealufejoel-4184s-projects.vercel.app`](https://creditsplit-mftj0mn09-delealufejoel-4184s-projects.vercel.app), deployment `dpl_F1KrmaYyjF6s1pq8nVTDyWtNfHg7` |
-| Release-content commit | Documentation-only closeout follows the current source/deployment release; the exact final Git commit and its green CI run are reported in the handoff |
-| Exact-SHA CI for release-content commit | Previously verified source-release run [40670532365](https://github.com/ometere123/creditsplit/actions/runs/40670532365); final closeout CI is linked in the handoff |
-| Final documentation closeout | Reconciles current project 2 CLI/SDK evidence with current project 1 browser/refund evidence and historical deployments; it does not change the deployed contract or frontend source |
+| Current Ready Vercel deployment | [`creditsplit-g7s6a1lgc-delealufejoel-4184s-projects.vercel.app`](https://creditsplit-g7s6a1lgc-delealufejoel-4184s-projects.vercel.app), deployment `dpl_8yqdUxaeUiFS6hCuVZavcH86eKdx` |
+| Release-content commit | `ecb3bf2de275d72bafd641749b7b1c55439c4408` (merged `main`; direct-source Vercel upload used this exact tree) |
+| Exact-SHA CI for release-content commit | [GitHub Actions run 40774464152](https://github.com/ometere123/creditsplit/actions/runs/40774464152) |
+| Final release scope | Frontend/tooling/docs only; the Intelligent Contract, deployed address, storage and historical transactions are unchanged |
 
 ### Source parity: repository LF versus deployed CRLF
 
@@ -230,4 +230,4 @@ GitHub auto-deployment is not connected; this is the existing direct-source proj
 
 ## Frontend settlement hardening release
 
-The frontend-only release after this deployment record does not alter the Intelligent Contract, deployed address, contract storage or historical transactions. It hardens receipt classification so a write is confirmed only when `FINALIZED`, `MAJORITY_AGREE` and successful leader/contract execution are all established; incomplete finalized receipts remain unresolved. It also persists a pre-broadcast signing lock, coordinates concurrent browser tabs, preserves confirmed-success state across failed reads, formats exact wei allocations, and maps delivery-verifier child transfers only to contributor slots with positive allocations. The production UI continues to expose `EMITTED_UNVERIFIED` and does not call emission alone confirmed beneficiary delivery. Connected Playwright tests are deterministic provider fixtures and are not additional live StudioNet transactions.
+The frontend-only release after this deployment record does not alter the Intelligent Contract, deployed address, contract storage or historical transactions. It hardens receipt classification so a write is confirmed only when `FINALIZED`, `MAJORITY_AGREE` and successful leader/contract execution are all established; incomplete finalized receipts remain unresolved. It also persists a pre-broadcast signing lock, coordinates concurrent browser tabs, preserves confirmed-success state across failed reads, formats exact wei allocations, and maps delivery-verifier child transfers only to contributor slots with positive allocations. The verifier requires an exact unique child-hash set from the authoritative triggered-transaction read while tolerating protocol processing order; supplied child records remain bound to contributor allocation slots and exact recipients/amounts. The production UI continues to expose `EMITTED_UNVERIFIED` and does not call emission alone confirmed beneficiary delivery. Connected Playwright tests are deterministic provider fixtures and are not additional live StudioNet transactions.

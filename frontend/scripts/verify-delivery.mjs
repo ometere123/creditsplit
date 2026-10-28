@@ -401,7 +401,16 @@ function evaluateHistoricalEvidence(balanceEvidence, parentRecord, children, che
 function triggeredIdsMatch(triggered, expected) {
   if (!triggered?.supported || !Array.isArray(triggered.value)) return false;
   if (triggered.value.length !== expected.length) return false;
-  return triggered.value.every((hash, index) => typeof hash === 'string' && typeof expected[index] === 'string' && hash.toLowerCase() === expected[index].toLowerCase());
+  const actual = canonicalSet(triggered.value);
+  const wanted = canonicalSet(expected);
+  // StudioNet may expose triggered children in processing order rather than
+  // contributor-slot order. Provenance is therefore an exact unique set
+  // check; allocation-slot binding remains positional in verifyChildren(),
+  // where each supplied child is checked against its recipient and amount.
+  return actual.size === triggered.value.length
+    && wanted.size === expected.length
+    && actual.size === wanted.size
+    && [...actual].every((hash) => wanted.has(hash));
 }
 
 function verifyChildren(report, args, checked) {

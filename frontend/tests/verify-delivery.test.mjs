@@ -152,8 +152,18 @@ test('a zero-value child supplied for a zero allocation is rejected', () => {
   assert.ok(result.contradictions.length > 0);
 });
 
-test('authoritative child ordering must match contributor allocation order', () => {
-  const verdict = verdictFor(report({triggered: [CHILDREN[1], CHILDREN[0], CHILDREN[2]]}), args());
+test('authoritative child processing order may differ while allocation-slot binding remains exact', () => {
+  const parent = parentRecord();
+  const processingOrder = [CHILDREN[1], CHILDREN[2], CHILDREN[0]];
+  parent.triggeredTransactions = processingOrder;
+  const verdict = verdictFor({parent, triggered: processingOrder}, args());
+  assert.equal(verdict.verdict, 'ALLOCATION_AND_PROTOCOL_CREDIT_VERIFIED_DELIVERY_UNCONFIRMED');
+  assert.deepEqual(verdict.contradictions, []);
+});
+
+test('child records supplied in the wrong allocation order fail closed', () => {
+  const swappedChildren = [childRecord(1), childRecord(0), childRecord(2)];
+  const verdict = verdictFor({children: swappedChildren}, args());
   assert.equal(verdict.verdict, 'INCONCLUSIVE_OR_CONTRADICTED');
   assert.ok(verdict.contradictions.length > 0);
 });
