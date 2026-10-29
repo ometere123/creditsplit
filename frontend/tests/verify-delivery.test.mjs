@@ -138,6 +138,27 @@ test('zero-weight contributor slots do not require zero-value child transfers', 
   }
 });
 
+test('missing positive-allocation children cannot verify a partial payout', () => {
+  const cases = [
+    { weights: [5, 3, 3], amounts: AMOUNTS, suppliedSlots: [0, 1] },
+    { weights: [5, 0, 3], amounts: ['5', '0', '3'], suppliedSlots: [0] },
+    { weights: [5, 3, 3], amounts: AMOUNTS, suppliedSlots: [] },
+  ];
+  for (const { weights, amounts, suppliedSlots } of cases) {
+    const project = projectRecord();
+    project.weights = weights;
+    project.amounts_wei = amounts;
+    project.pool_wei = amounts.reduce((sum, value) => sum + BigInt(value), 0n).toString();
+    const hashes = suppliedSlots.map((slot) => CHILDREN[slot]);
+    const parent = parentRecord();
+    parent.triggeredTransactions = hashes;
+    const children = suppliedSlots.map((slot) => childRecord(slot, { value: amounts[slot] }));
+    const result = verdictFor({ project, parent, triggered: hashes, children }, args(RECIPIENTS, hashes));
+    assert.equal(result.verdict, 'INCONCLUSIVE_OR_CONTRADICTED');
+    assert.match(result.contradictions.join(' '), /transfer children for positive allocations/);
+  }
+});
+
 test('a zero-value child supplied for a zero allocation is rejected', () => {
   const project = projectRecord();
   project.pool_wei = '8';

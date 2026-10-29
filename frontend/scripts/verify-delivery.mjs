@@ -422,6 +422,11 @@ function verifyChildren(report, args, checked) {
   if (children.length !== args.child.length) contradictions.push('Required child transaction records are missing');
   const expected = expectedValues(checked);
   const expectedSlots = checked.mode === 'payout' ? (checked.positiveSlots ?? []) : [0];
+  // Every positive allocation must have exactly one child; a fully consistent
+  // subset of genuine child records is not evidence for the missing payout.
+  if (args.child.length !== expectedSlots.length) {
+    contradictions.push(`Expected ${expectedSlots.length} transfer children for positive allocations, received ${args.child.length}`);
+  }
   const seen = new Set();
   children.forEach((child, index) => {
     const slot = expectedSlots[index];
